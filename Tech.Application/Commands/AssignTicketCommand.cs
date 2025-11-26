@@ -1,12 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using MediatR;
 
 namespace Tech.Application.Commands
 {
-    internal class AssignTicketCommand
+    public class AssignTicketCommand : IRequest<Unit>
     {
+        public int TicketId { get; set; }
+        public int TechSupportId { get; set; }
     }
 }

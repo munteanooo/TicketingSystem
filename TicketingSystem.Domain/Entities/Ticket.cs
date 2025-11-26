@@ -15,7 +15,9 @@ namespace TicketingSystem.Domain.Entities
         public bool IsResolved { get; set; } = false;
         public DateTime Created { get; set; } = DateTime.Now;
         public int UserId { get; set; }
-        public User User { get; set; }
-        public ICollection<TicketMessage> Messages { get; set; }
+        public User User { get; set; } = null!;
+        public int? TechSupportId { get; set; }
+        public User? TechSupport { get; set; }
+        public ICollection<TicketMessage> Messages { get; set; } = new List<TicketMessage>();
     }
 }

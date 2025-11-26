@@ -18,8 +18,21 @@ namespace TicketingSystem.Infrastructure.Data.Configurations
                 .IsRequired()
                 .HasMaxLength(150);
 
+            builder.Property(u => u.PasswordHash)
+                .IsRequired()
+                .HasMaxLength(255);
+
+            builder.Property(u => u.Role)
+                .IsRequired()
+                .HasConversion<string>();
+
             builder.HasIndex(u => u.Email)
-                .IsUnique(); 
+                .IsUnique();
+
+            builder.HasMany(u => u.Tickets)
+                .WithOne(t => t.User)
+                .HasForeignKey(t => t.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }
