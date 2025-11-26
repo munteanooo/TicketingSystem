@@ -5,20 +5,19 @@ using Microsoft.AspNetCore.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// DbContext pentru ticketing
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// DbContext pentru Identity
 builder.Services.AddDbContext<ApplicationIdentityDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Identity
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
     .AddEntityFrameworkStores<ApplicationIdentityDbContext>()
     .AddDefaultTokenProviders();
 
-// Controllers + Swagger/OpenAPI
+//builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(CreateTicketCommand).Assembly));
+//builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(AssignTicketCommand).Assembly));
+
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 

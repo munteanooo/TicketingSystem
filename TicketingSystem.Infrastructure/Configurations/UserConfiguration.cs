@@ -17,6 +17,9 @@ namespace TicketingSystem.Infrastructure.Data.Configurations
             builder.Property(u => u.Email)
                 .IsRequired()
                 .HasMaxLength(150);
+
+            builder.HasIndex(u => u.Email)
+                .IsUnique(); 
         }
     }
 }

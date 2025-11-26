@@ -1,0 +1,26 @@
+services:
+  techui.server:
+    image: ${DOCKER_REGISTRY-}techuiserver
+    build:
+      context: .
+      dockerfile: TechUI.Server/Dockerfile
+
+  techui.api:
+    image: ${DOCKER_REGISTRY-}techapi
+    build:
+      context: .
+      dockerfile: TechApi/Dockerfile
+
+  client.api:
+    image: ${DOCKER_REGISTRY-}clientapi
+    build:
+      context: .
+      dockerfile: Client.API/Dockerfile
+
+
+  client.web:
+    image: ${DOCKER_REGISTRY-}clientweb
+    build:
+      context: .
+      dockerfile: Client.Web/Dockerfile
+
