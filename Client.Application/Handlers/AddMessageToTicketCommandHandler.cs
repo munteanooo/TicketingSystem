@@ -1,33 +1,48 @@
-﻿using Client.Application.Commands;
-using MediatR;
-using TicketingSystem.Domain.Entities;
+﻿using MediatR;
+using System.Threading;
+using System.Threading.Tasks;
 using TicketingSystem.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
+using TicketingSystem.Domain.Entities;
+using TicketingSystem.Domain.Enums;
+using Client.Application.Commands;
 
-namespace Client.Application.Handlers
+namespace Client.Application.Handlers;
+
+public class AddMessageToTicketCommandHandler : IRequestHandler<AddMessageToTicketCommand, int>
 {
-    public class AddMessageToTicketCommandHandler : IRequestHandler<AddMessageToTicketCommand, Unit>
+    private readonly ApplicationDbContext _context;
+
+    public AddMessageToTicketCommandHandler(ApplicationDbContext context)
     {
-        private readonly ApplicationDbContext _context;
+        _context = context;
+    }
 
-        public AddMessageToTicketCommandHandler(ApplicationDbContext context)
+    public async Task<int> Handle(AddMessageToTicketCommand request, CancellationToken cancellationToken)
+    {
+        var ticket = await _context.Tickets
+            .FirstOrDefaultAsync(t => t.Id == request.TicketId && t.ClientId == request.ClientId, cancellationToken);
+
+        if (ticket == null)
+            throw new UnauthorizedAccessException("Ticket not found or unauthorized");
+
+        if (ticket.Status == TicketStatus.Closed || ticket.Status == TicketStatus.Resolved)
+            throw new InvalidOperationException("Cannot add message to closed/resolved ticket");
+
+        var message = new TicketMessage
         {
-            _context = context;
-        }
+            Content = request.Content,
+            TicketId = request.TicketId,
+            UserId = request.ClientId,
+            IsInternal = false,
+            CreatedAt = DateTime.UtcNow
+        };
 
-        public async Task<Unit> Handle(AddMessageToTicketCommand request, CancellationToken ct)
-        {
-            var message = new TicketMessage
-            {
-                Content = request.Content,
-                TicketId = request.TicketId,
-                UserId = request.ClientId,
-                Created = DateTime.UtcNow
-            };
+        ticket.UpdatedAt = DateTime.UtcNow;
 
-            _context.TicketMessages.Add(message);
-            await _context.SaveChangesAsync(ct);
+        await _context.TicketMessages.AddAsync(message, cancellationToken);
+        await _context.SaveChangesAsync(cancellationToken);
 
-            return Unit.Value;
-        }
+        return message.Id;
     }
 }

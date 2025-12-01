@@ -1,11 +1,10 @@
 ﻿using MediatR;
 using Client.Application.DTOs;
 
-namespace Client.Application.Queries
+namespace Client.Application.Queries;
+
+public class GetTicketDetailsQuery : IRequest<TicketDetailsDto>
 {
-    public class GetTicketDetailsQuery : IRequest<TicketDetailsDto>
-    {
-        public int TicketId { get; set; }
-        public int ClientId { get; set; }
-    }
+    public int TicketId { get; set; }
+    public int ClientId { get; set; }
 }

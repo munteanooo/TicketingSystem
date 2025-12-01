@@ -2,7 +2,7 @@
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using TicketingSystem.Domain.Entities;
 
-namespace TicketingSystem.Infrastructure.Data.Configurations
+namespace TicketingSystem.Infrastructure.Configurations
 {
     public class AttachmentConfiguration : IEntityTypeConfiguration<Attachment>
     {
@@ -17,7 +17,7 @@ namespace TicketingSystem.Infrastructure.Data.Configurations
             builder.Property(a => a.FilePath)
                 .IsRequired()
                 .HasMaxLength(500);
-
+            
             builder.HasOne(a => a.TicketMessage)
                 .WithMany(tm => tm.Attachments)
                 .HasForeignKey(a => a.TicketMessageId)

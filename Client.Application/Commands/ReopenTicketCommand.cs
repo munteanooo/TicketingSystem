@@ -1,10 +1,13 @@
 ﻿using MediatR;
+using System.ComponentModel.DataAnnotations;
 
-namespace Client.Application.Commands
+namespace Client.Application.Commands;
+
+public class ReopenTicketCommand : IRequest<Unit>
 {
-    public class ReopenTicketCommand : IRequest<Unit>
-    {
-        public int TicketId { get; set; }
-        public int ClientId { get; set; }
-    }
+    [Required]
+    public int TicketId { get; set; }
+
+    [Required]
+    public int ClientId { get; set; }
 }

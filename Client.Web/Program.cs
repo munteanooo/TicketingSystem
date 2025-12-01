@@ -1,4 +1,4 @@
-using Client.Web.Components;
+using Client.Web;
 
 namespace Client.Web
 {
@@ -27,8 +27,8 @@ namespace Client.Web
             app.UseAntiforgery();
 
             app.MapStaticAssets();
-            app.MapRazorComponents<App>()
-                .AddInteractiveServerRenderMode();
+            //app.MapRazorComponents<App>()
+            //    .AddInteractiveServerRenderMode();
 
             app.Run();
         }

@@ -2,40 +2,41 @@
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using TicketingSystem.Domain.Entities;
 
-namespace TicketingSystem.Infrastructure.Data.Configurations
+namespace TicketingSystem.Infrastructure.Configurations;
+
+public class TicketMessageConfiguration : IEntityTypeConfiguration<TicketMessage>
 {
-    public class TicketMessageConfiguration : IEntityTypeConfiguration<TicketMessage>
+    public void Configure(EntityTypeBuilder<TicketMessage> builder)
     {
-        public void Configure(EntityTypeBuilder<TicketMessage> builder)
-        {
-            builder.HasKey(tm => tm.Id);
+        builder.HasKey(m => m.Id);
 
-            builder.Property(tm => tm.Content)
-                .IsRequired()
-                .HasMaxLength(2000);
+        builder.Property(m => m.Content)
+            .IsRequired()
+            .HasMaxLength(5000);
 
-            builder.Property(tm => tm.Created)
-                .IsRequired();
+        builder.Property(m => m.CreatedAt)
+            .IsRequired();
 
-            builder.Property(tm => tm.TicketId)
-                .IsRequired();
+        builder.Property(m => m.IsInternal)
+            .HasDefaultValue(false);
 
-            builder.Property(tm => tm.UserId)
-                .IsRequired();
+        builder.HasOne(m => m.Ticket)
+            .WithMany(t => t.Messages)
+            .HasForeignKey(m => m.TicketId)
+            .OnDelete(DeleteBehavior.Cascade);
 
-            builder.HasOne(tm => tm.Ticket)
-                .WithMany(t => t.Messages)
-                .HasForeignKey(tm => tm.TicketId)
-                .OnDelete(DeleteBehavior.Cascade); 
+        builder.HasOne(m => m.User)
+            .WithMany(u => u.Messages)
+            .HasForeignKey(m => m.UserId)
+            .OnDelete(DeleteBehavior.Restrict);
 
-            builder.HasOne(tm => tm.User)
-                .WithMany()
-                .HasForeignKey(tm => tm.UserId)
-                .OnDelete(DeleteBehavior.Restrict); 
+        builder.HasMany(m => m.Attachments)
+            .WithOne(a => a.TicketMessage)
+            .HasForeignKey(a => a.TicketMessageId)
+            .OnDelete(DeleteBehavior.Cascade);
 
-            builder.HasIndex(tm => tm.TicketId);
-            builder.HasIndex(tm => tm.Created);
-            builder.HasIndex(tm => tm.UserId);
-        }
+        builder.HasIndex(m => m.TicketId);
+        builder.HasIndex(m => m.UserId);
+        builder.HasIndex(m => m.CreatedAt);
     }
 }

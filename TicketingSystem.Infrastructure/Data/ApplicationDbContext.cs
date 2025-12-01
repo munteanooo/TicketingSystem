@@ -1,21 +1,28 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using TicketingSystem.Domain.Entities;
+using TicketingSystem.Infrastructure.Configurations;
 
-namespace TicketingSystem.Infrastructure.Data
+namespace TicketingSystem.Infrastructure.Data;
+
+public class ApplicationDbContext : DbContext
 {
-    public class ApplicationDbContext : DbContext
+    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
+        : base(options)
     {
-        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
-            : base(options)
-        {
-        }
-        public DbSet<User> Users => Set<User>();
-        public DbSet<Ticket> Tickets => Set<Ticket>();
-        public DbSet<TicketMessage> TicketMessages => Set<TicketMessage>(); 
-        public DbSet<Attachment> Attachments => Set<Attachment>();  
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
-        {
-            base.OnModelCreating(modelBuilder);
-        }
+    }
+
+    public DbSet<User> Users { get; set; }
+    public DbSet<Ticket> Tickets { get; set; }
+    public DbSet<TicketMessage> TicketMessages { get; set; }
+    public DbSet<Attachment> Attachments { get; set; }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+
+        modelBuilder.ApplyConfiguration(new UserConfiguration());
+        modelBuilder.ApplyConfiguration(new TicketConfiguration());
+        modelBuilder.ApplyConfiguration(new TicketMessageConfiguration());
+        modelBuilder.ApplyConfiguration(new AttachmentConfiguration());
     }
 }

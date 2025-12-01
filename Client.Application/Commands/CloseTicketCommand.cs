@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Client.Application.Commands;
 
-public class AddMessageToTicketCommand : IRequest<int>
+public class CloseTicketCommand : IRequest<Unit>
 {
     [Required]
     public int TicketId { get; set; }
@@ -11,7 +11,6 @@ public class AddMessageToTicketCommand : IRequest<int>
     [Required]
     public int ClientId { get; set; }
 
-    [Required]
-    [StringLength(5000)]
-    public string Content { get; set; } = string.Empty;
+    [StringLength(1000)]
+    public string ClosingNotes { get; set; } = string.Empty;
 }

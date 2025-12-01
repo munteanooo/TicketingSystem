@@ -1,36 +1,44 @@
-﻿using Client.Application.Commands;
-using MediatR;
-using TicketingSystem.Domain.Entities;
+﻿using MediatR;
+using System.Threading;
+using System.Threading.Tasks;
 using TicketingSystem.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
+using TicketingSystem.Domain.Entities;
 using TicketingSystem.Domain.Enums;
+using Client.Application.Commands;
 
-namespace Client.Application.Handlers
+namespace Client.Application.Handlers;
+
+public class CreateTicketCommandHandler : IRequestHandler<CreateTicketCommand, int>
 {
-    public class CreateTicketCommandHandler : IRequestHandler<CreateTicketCommand, int>  
+    private readonly ApplicationDbContext _context;
+
+    public CreateTicketCommandHandler(ApplicationDbContext context)
     {
-        private readonly ApplicationDbContext _context;
+        _context = context;
+    }
 
-        public CreateTicketCommandHandler(ApplicationDbContext context)
+    public async Task<int> Handle(CreateTicketCommand request, CancellationToken cancellationToken)
+    {
+        var clientExists = await _context.Users
+            .AnyAsync(u => u.Id == request.ClientId && u.Role == UserRole.Client, cancellationToken);
+
+        if (!clientExists)
+            throw new UnauthorizedAccessException("Client not found or unauthorized");
+
+        var ticket = new Ticket
         {
-            _context = context;
-        }
+            Title = request.Title,
+            Description = request.Description,
+            Priority = request.Priority,
+            Status = TicketStatus.Open,
+            ClientId = request.ClientId,
+            CreatedAt = DateTime.UtcNow
+        };
 
-        public async Task<int> Handle(CreateTicketCommand request, CancellationToken ct)
-        {
-            var ticket = new Ticket
-            {
-                Title = request.Title,
-                Description = request.Description,
-                UserId = request.ClientId,
-                Created = DateTime.UtcNow,
-                Priority = TicketPriority.Medium,
-                IsResolved = false
-            };
+        await _context.Tickets.AddAsync(ticket, cancellationToken);
+        await _context.SaveChangesAsync(cancellationToken);
 
-            _context.Tickets.Add(ticket);
-            await _context.SaveChangesAsync(ct);
-
-            return ticket.Id;
-        }
+        return ticket.Id;
     }
 }
