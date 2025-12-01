@@ -8,7 +8,7 @@ namespace TicketingSystem.Domain.Enums
 {
     public enum UserRole
     {
-        Client = 0,
-        TechSupport = 1,
+        Client,
+        TechSupport,
     }
 }

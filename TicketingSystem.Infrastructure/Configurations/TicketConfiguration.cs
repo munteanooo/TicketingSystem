@@ -15,25 +15,32 @@ namespace TicketingSystem.Infrastructure.Data.Configurations
                 .HasMaxLength(200);
 
             builder.Property(t => t.Description)
+                .IsRequired()
                 .HasMaxLength(2000);
 
             builder.Property(t => t.Priority)
                 .IsRequired()
-                .HasConversion<string>();
+                .HasConversion<string>()
+                .HasMaxLength(20);
 
             builder.Property(t => t.IsResolved)
                 .IsRequired();
 
+            builder.Property(t => t.Created)
+                .IsRequired();
+
+            builder.Property(t => t.UserId)
+                .IsRequired();
+
             builder.HasOne(t => t.User)
-                .WithMany()  
+                .WithMany()
                 .HasForeignKey(t => t.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            builder.HasOne(t => t.TechSupport)
-                .WithMany()  
-                .HasForeignKey(t => t.TechSupportId)
-                .IsRequired(false)  
-                .OnDelete(DeleteBehavior.Restrict);
+            builder.HasIndex(t => t.UserId);
+            builder.HasIndex(t => t.IsResolved);
+            builder.HasIndex(t => t.Created);
+            builder.HasIndex(t => t.Priority);
         }
     }
 }

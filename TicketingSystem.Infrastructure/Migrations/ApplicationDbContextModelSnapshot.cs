@@ -38,7 +38,7 @@ namespace TicketingSystem.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<int>("TicketMessageId")
+                    b.Property<int?>("TicketMessageId")
                         .HasColumnType("integer");
 
                     b.Property<DateTime>("UploadedAt")
@@ -64,37 +64,24 @@ namespace TicketingSystem.Infrastructure.Migrations
 
                     b.Property<string>("Description")
                         .IsRequired()
-                        .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)");
+                        .HasColumnType("text");
 
                     b.Property<bool>("IsResolved")
                         .HasColumnType("boolean");
 
-                    b.Property<string>("Priority")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<int?>("TechSupportId")
+                    b.Property<int>("Priority")
                         .HasColumnType("integer");
 
                     b.Property<string>("Title")
                         .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
+                        .HasColumnType("text");
 
                     b.Property<int>("UserId")
                         .HasColumnType("integer");
 
-                    b.Property<int?>("UserId1")
-                        .HasColumnType("integer");
-
                     b.HasKey("Id");
 
-                    b.HasIndex("TechSupportId");
-
                     b.HasIndex("UserId");
-
-                    b.HasIndex("UserId1");
 
                     b.ToTable("Tickets");
                 });
@@ -162,33 +149,18 @@ namespace TicketingSystem.Infrastructure.Migrations
 
             modelBuilder.Entity("TicketingSystem.Domain.Entities.Attachment", b =>
                 {
-                    b.HasOne("TicketingSystem.Domain.Entities.TicketMessage", "TicketMessage")
+                    b.HasOne("TicketingSystem.Domain.Entities.TicketMessage", null)
                         .WithMany("Attachments")
-                        .HasForeignKey("TicketMessageId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("TicketMessage");
+                        .HasForeignKey("TicketMessageId");
                 });
 
             modelBuilder.Entity("TicketingSystem.Domain.Entities.Ticket", b =>
                 {
-                    b.HasOne("TicketingSystem.Domain.Entities.User", "TechSupport")
-                        .WithMany()
-                        .HasForeignKey("TechSupportId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
                     b.HasOne("TicketingSystem.Domain.Entities.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("TicketingSystem.Domain.Entities.User", null)
                         .WithMany("Tickets")
-                        .HasForeignKey("UserId1");
-
-                    b.Navigation("TechSupport");
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("User");
                 });
@@ -202,7 +174,7 @@ namespace TicketingSystem.Infrastructure.Migrations
                         .IsRequired();
 
                     b.HasOne("TicketingSystem.Domain.Entities.User", "User")
-                        .WithMany()
+                        .WithMany("Messages")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -224,6 +196,8 @@ namespace TicketingSystem.Infrastructure.Migrations
 
             modelBuilder.Entity("TicketingSystem.Domain.Entities.User", b =>
                 {
+                    b.Navigation("Messages");
+
                     b.Navigation("Tickets");
                 });
 #pragma warning restore 612, 618
