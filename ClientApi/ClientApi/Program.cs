@@ -1,8 +1,10 @@
+using MediatR;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using TicketingSystem.Infrastructure.Data;
+using Client.Application.Commands;
 
 var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;
@@ -28,6 +30,10 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
+builder.Services.AddMediatR(cfg =>
+{
+    cfg.RegisterServicesFromAssembly(typeof(CreateTicketCommand).Assembly);
+}); ;
 builder.Services.AddAuthorization();
 builder.Services.AddControllers();
 

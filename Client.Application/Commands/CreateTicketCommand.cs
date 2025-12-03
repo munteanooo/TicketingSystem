@@ -14,7 +14,7 @@ public class CreateTicketCommand : IRequest<int>
     [StringLength(1000)]
     public string Description { get; set; } = string.Empty;
 
-    public TicketPriority Priority { get; set; } = TicketPriority.Medium;
+    public TicketPriority Priority { get; set; }
 
     [Required]
     public int ClientId { get; set; }

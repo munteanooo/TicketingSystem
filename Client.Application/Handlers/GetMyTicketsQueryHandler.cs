@@ -1,13 +1,8 @@
 ﻿using MediatR;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Linq;
-using System.Collections.Generic;
-using TicketingSystem.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using TicketingSystem.Infrastructure.Data;
 using Client.Application.Queries;
 using Client.Application.DTOs;
-using TicketingSystem.Domain.Enums;
 
 namespace Client.Application.Handlers;
 
@@ -22,16 +17,21 @@ public class GetMyTicketsQueryHandler : IRequestHandler<GetMyTicketsQuery, List<
 
     public async Task<List<TicketDto>> Handle(GetMyTicketsQuery request, CancellationToken cancellationToken)
     {
+        Console.WriteLine($"GetMyTicketsQuery pentru ClientId: {request.ClientId}");
+
         var query = _context.Tickets
             .Include(t => t.Client)
             .Where(t => t.ClientId == request.ClientId)
-            .OrderByDescending(t => t.CreatedAt)
             .AsQueryable();
+
+        var count = await query.CountAsync(cancellationToken);
+        Console.WriteLine($"Tichete găsite pentru client {request.ClientId}: {count}");
 
         if (request.Status.HasValue)
             query = query.Where(t => t.Status == request.Status.Value);
 
         var tickets = await query
+            .OrderByDescending(t => t.CreatedAt)
             .Skip((request.Page - 1) * request.PageSize)
             .Take(request.PageSize)
             .Select(t => new TicketDto
@@ -51,6 +51,8 @@ public class GetMyTicketsQueryHandler : IRequestHandler<GetMyTicketsQuery, List<
                 ClientName = t.Client.FullName
             })
             .ToListAsync(cancellationToken);
+
+        Console.WriteLine($"Tichete returnate: {tickets.Count}");
 
         return tickets;
     }
