@@ -1,0 +1,122 @@
+﻿@* @page "/tickets/create"
+@using TicketingSystem.ClientApi.Models
+@using TicketingSystem.Domain.Enums
+@using Client.Web.Services
+@using MudBlazor
+@inject ITicketService TicketService
+@inject ISnackbar Snackbar
+@inject NavigationManager Navigation
+
+<PageTitle>Create New Ticket - TicketHub</PageTitle>
+
+<MudGrid>
+    <MudItem xs="12" md="8" Class="mx-auto">
+        <MudCard>
+            <MudCardHeader>
+                <MudCardHeaderAvatar>
+                    <MudIcon Icon="@Icons.Material.Filled.AddCircle" 
+                            Size="Size.Large" 
+                            Color="Color.Primary"/>
+                </MudCardHeaderAvatar>
+                <MudCardHeaderContent>
+                    <MudText Typo="Typo.h5">Create New Ticket</MudText>
+                    <MudText Color="Color.Secondary">Fill in the details below to create a new support ticket</MudText>
+                </MudCardHeaderContent>
+            </MudCardHeader>
+            
+            <MudCardContent>
+                <EditForm Model="@createRequest" OnValidSubmit="CreateTicket">
+                    <MudGrid Spacing="3">
+                        <!-- Subject -->
+                        <MudItem xs="12">
+                            <MudTextField @bind-Value="@createRequest.Title" 
+                                         Label="Title *" 
+                                         Variant="Variant.Outlined"
+                                         Required="true"
+                                         RequiredError="Title is required"
+                                         Immediate="true"/>
+                        </MudItem>
+                        
+                        <!-- Description -->
+                        <MudItem xs="12">
+                            <MudTextArea @bind-Value="@createRequest.Description" 
+                                        Label="Description *" 
+                                        Variant="Variant.Outlined"
+                                        Rows="5"
+                                        Required="true"
+                                        RequiredError="Description is required"/>
+                        </MudItem>
+                        
+                        <!-- Priority -->
+                        <MudItem xs="12" sm="6">
+                            <MudSelect T="TicketPriority" 
+                                      @bind-Value="@createRequest.Priority" 
+                                      Label="Priority *" 
+                                      Variant="Variant.Outlined"
+                                      Required="true">
+                                @foreach (var priority in Enum.GetValues<TicketPriority>())
+                                {
+                                    <MudSelectItem T="TicketPriority" Value="@priority">
+                                        @priority
+                                    </MudSelectItem>
+                                }
+                            </MudSelect>
+                        </MudItem>
+                        
+                        <!-- Initial Message (Optional) -->
+                        <MudItem xs="12" sm="6">
+                            <MudTextArea @bind-Value="@createRequest.InitialMessage" 
+                                        Label="Initial Message (Optional)"
+                                        Variant="Variant.Outlined"
+                                        Rows="3"/>
+                        </MudItem>
+                        
+                        <!-- Actions -->
+                        <MudItem xs="12" Class="mt-4">
+                            <div class="d-flex justify-end gap-2">
+                                <MudButton Variant="Variant.Text"
+                                          Color="Color.Secondary"
+                                          Href="/tickets">
+                                    Cancel
+                                </MudButton>
+                                
+                                <MudButton Type="ButtonType.Submit"
+                                          Variant="Variant.Filled"
+                                          Color="Color.Primary"
+                                          EndIcon="@Icons.Material.Filled.Send"
+                                          Loading="@isSubmitting">
+                                    Create Ticket
+                                </MudButton>
+                            </div>
+                        </MudItem>
+                    </MudGrid>
+                </EditForm>
+            </MudCardContent>
+        </MudCard>
+    </MudItem>
+</MudGrid>
+
+@code {
+    private CreateTicketRequest createRequest = new();
+    private bool isSubmitting = false;
+    
+    private async Task CreateTicket()
+    {
+        isSubmitting = true;
+        
+        try
+        {
+            var result = await TicketService.CreateTicketAsync(createRequest);
+            Snackbar.Add($"Ticket #{result.Id} created successfully!", Severity.Success);
+            Navigation.NavigateTo($"/tickets/{result.Id}");
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error creating ticket: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+} *@

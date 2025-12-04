@@ -1,0 +1,92 @@
+﻿@using TicketingSystem.ClientApi.Models
+@using MudBlazor
+
+<MudCard Class="ticket-card" Elevation="1">
+    <MudCardContent>
+        <div class="d-flex justify-space-between align-start mb-2">
+            <div>
+                <MudText Typo="Typo.subtitle1" Class="mb-1">#@Ticket.Id - @Ticket.Title</MudText>
+                <MudText Typo="Typo.caption" Color="Color.Secondary">
+                    Created by @Ticket.ClientName • @Ticket.CreatedAt.ToString("MMM dd, yyyy")
+                </MudText>
+            </div>
+            <MudChip T="string"
+                    Color="@GetPriorityColor(Ticket.Priority)" 
+                    Variant="Variant.Filled" 
+                    Size="Size.Small">
+                @Ticket.Priority
+            </MudChip>
+        </div>
+        
+        <MudText Typo="Typo.body2" Class="mb-3" Style="max-height: 60px; overflow: hidden;">
+            @(Ticket.Description.Length > 150 
+                ? Ticket.Description.Substring(0, 150) + "..." 
+                : Ticket.Description)
+        </MudText>
+        
+        <div class="d-flex justify-space-between align-center">
+            <MudChip T="string"
+                    Color="@GetStatusColor(Ticket.Status)" 
+                    Variant="Variant.Outlined" 
+                    Size="Size.Small">
+                @Ticket.Status
+            </MudChip>
+            
+            <div class="d-flex align-center gap-1">
+                <MudIcon Icon="@Icons.Material.Filled.Chat" 
+                        Size="Size.Small" 
+                        Color="Color.Info"/>
+                <MudText Typo="Typo.caption">@Ticket.MessageCount</MudText>
+            </div>
+        </div>
+    </MudCardContent>
+    
+    <MudCardActions>
+        <MudSpacer/>
+        <MudButton Variant="Variant.Text" 
+                  Color="Color.Primary"
+                  Size="Size.Small"
+                  EndIcon="@Icons.Material.Filled.ArrowForward"
+                  OnClick="OnViewClick">
+            View Details
+        </MudButton>
+    </MudCardActions>
+</MudCard>
+
+@code {
+    [Parameter]
+    public TicketDto Ticket { get; set; } = null!;
+    
+    [Parameter]
+    public EventCallback<TicketDto> OnView { get; set; }
+    
+    private async Task OnViewClick()
+    {
+        await OnView.InvokeAsync(Ticket);
+    }
+    
+    private Color GetPriorityColor(string priority)
+    {
+        return priority switch
+        {
+            "Critical" => Color.Error,
+            "High" => Color.Warning,
+            "Medium" => Color.Info,
+            "Low" => Color.Success,
+            _ => Color.Default
+        };
+    }
+    
+    private Color GetStatusColor(string status)
+    {
+        return status switch
+        {
+            "Open" => Color.Info,
+            "InProgress" => Color.Warning,
+            "OnHold" => Color.Secondary,
+            "Resolved" => Color.Success,
+            "Closed" => Color.Default,
+            _ => Color.Default
+        };
+    }
+}

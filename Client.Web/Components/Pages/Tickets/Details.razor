@@ -1,0 +1,62 @@
+﻿@* @using Client.Web.Services
+@using ClientApi.Models
+@using MudBlazor
+@using TicketingSystem.ClientApi.Models
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private TicketDetailDto? ticketDetail;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadTicket();
+    }
+
+    private async Task LoadTicket()
+    {
+        try
+        {
+            ticketDetail = await TicketService.GetTicketAsync(Id);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading ticket: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private string GetUserName(UserDto? user)
+    {
+        if (user == null)
+            return "Unknown User";
+
+        return !string.IsNullOrEmpty(user.FullName)
+            ? user.FullName
+            : user.Email;
+    }
+
+    private Color GetPriorityColor(string priority)
+    {
+        return priority switch
+        {
+            "Critical" => Color.Error,
+            "High" => Color.Warning,
+            "Medium" => Color.Info,
+            "Low" => Color.Success,
+            _ => Color.Default
+        };
+    }
+
+    private Color GetStatusColor(string status)
+    {
+        return status switch
+        {
+            "Open" => Color.Info,
+            "InProgress" => Color.Warning,
+            "OnHold" => Color.Secondary,
+            "Resolved" => Color.Success,
+            "Closed" => Color.Default,
+            _ => Color.Default
+        };
+    }
+} *@

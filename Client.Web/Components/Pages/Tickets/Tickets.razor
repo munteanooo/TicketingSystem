@@ -1,0 +1,71 @@
+﻿@page "/tickets"
+@using MudBlazor
+
+<PageTitle>Tickets</PageTitle>
+
+<MudContainer>
+    <MudText Typo="Typo.h4" Class="mt-4 mb-4">📋 Lista Ticket-uri</MudText>
+
+    <MudTable Items="@tickets" Hover="true">
+        <HeaderContent>
+            <MudTh>ID</MudTh>
+            <MudTh>Titlu</MudTh>
+            <MudTh>Prioritate</MudTh>
+            <MudTh>Status</MudTh>
+            <MudTh>Acțiuni</MudTh>
+        </HeaderContent>
+        <RowTemplate Context="ticket">
+            <MudTd>@ticket.Id</MudTd>
+            <MudTd>@ticket.Title</MudTd>
+            <MudTd>
+                @if (ticket.Priority == "High")
+                {
+                    <MudChip T="string" Color="Color.Error" Variant="Variant.Filled">High</MudChip>
+                }
+                else if (ticket.Priority == "Medium")
+                {
+                    <MudChip T="string" Color="Color.Warning" Variant="Variant.Filled">Medium</MudChip>
+                }
+                else
+                {
+                    <MudChip T="string" Color="Color.Success" Variant="Variant.Filled">Low</MudChip>
+                }
+            </MudTd>
+            <MudTd>@ticket.Status</MudTd>
+            <MudTd>
+                <MudButton Variant="Variant.Text"
+                           Size="Size.Small"
+                           Color="Color.Primary"
+                           Href="@($"/tickets/{ticket.Id}")">
+                    Vezi
+                </MudButton>
+            </MudTd>
+        </RowTemplate>
+    </MudTable>
+
+    <div class="mt-4">
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Success"
+                   Href="/tickets/create">
+            + Crează Ticket Nou
+        </MudButton>
+    </div>
+</MudContainer>
+
+@code {
+    // Date MOCK temporare
+    private List<TicketSimple> tickets = new()
+    {
+        new TicketSimple { Id = 1, Title = "Login nu funcționează", Priority = "High", Status = "Open" },
+        new TicketSimple { Id = 2, Title = "Eroare plată", Priority = "Medium", Status = "In Progress" },
+        new TicketSimple { Id = 3, Title = "Bug raport", Priority = "Low", Status = "Resolved" }
+    };
+
+    public class TicketSimple
+    {
+        public int Id { get; set; }
+        public string Title { get; set; } = "";
+        public string Priority { get; set; } = "Medium";
+        public string Status { get; set; } = "Open";
+    }
+}

@@ -1,0 +1,31 @@
+﻿@page "/"
+@using MudBlazor
+
+<PageTitle>TicketHub</PageTitle>
+
+<MudContainer>
+    <MudPaper Class="pa-6 mt-6" Elevation="3">
+        <MudText Typo="Typo.h3" Class="mb-4">🎫 TicketHub System</MudText>
+        <MudText Class="mb-6">Sistem simplu de gestionare ticket-uri</MudText>
+
+        <MudGrid>
+            <MudItem xs="12" sm="6">
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           FullWidth="true"
+                           Href="/tickets"
+                           Class="mb-2">
+                    Vezi toate ticket-urile
+                </MudButton>
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudButton Variant="Variant.Outlined"
+                           Color="Color.Success"
+                           FullWidth="true"
+                           Href="/tickets/create">
+                    Crează ticket nou
+                </MudButton>
+            </MudItem>
+        </MudGrid>
+    </MudPaper>
+</MudContainer>
