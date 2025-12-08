@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using TicketingSystem.Domain.Enums;
 
 namespace Client.Application.DTOs
 {
@@ -10,7 +11,6 @@ namespace Client.Application.DTOs
     {
         public string? Title { get; set; }
         public string? Description { get; set; }
-        public string? Status { get; set; }
-        public string? Priority { get; set; }
+        public TicketPriority? Priority { get; set; }
     }
 }

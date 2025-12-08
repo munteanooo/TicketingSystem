@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using TicketingSystem.Domain.Enums;
 using Client.Application.Commands;
 using TicketingSystem.Infrastructure.Data;
+using TicketingSystem.Infrastructure.Configurations;
 
 namespace Client.Application.Handlers;
 
@@ -14,7 +15,7 @@ public class CloseTicketCommandHandler(ApplicationDbContext context)
     public async Task<Unit> Handle(CloseTicketCommand request, CancellationToken cancellationToken)
     {
         var ticket = await _context.Tickets
-            .FirstOrDefaultAsync(t => t.Id == request.TicketId && t.ClientId == request.ClientId, cancellationToken);
+            .FirstOrDefaultAsync(t => t.Id == request.TicketId && t.CreatedByUserId == request.ClientId, cancellationToken);
 
         if (ticket is null)
             throw new UnauthorizedAccessException("Ticket not found or unauthorized");

@@ -14,7 +14,7 @@ public class ReopenTicketCommandHandler(ApplicationDbContext context)
     public async Task<Unit> Handle(ReopenTicketCommand request, CancellationToken cancellationToken)
     {
         var ticket = await _context.Tickets
-            .FirstOrDefaultAsync(t => t.Id == request.TicketId && t.ClientId == request.ClientId, cancellationToken);
+            .FirstOrDefaultAsync(t => t.Id == request.TicketId && t.CreatedByUserId == request.ClientId, cancellationToken);
 
         if (ticket is null)
             throw new UnauthorizedAccessException("Ticket not found or unauthorized");

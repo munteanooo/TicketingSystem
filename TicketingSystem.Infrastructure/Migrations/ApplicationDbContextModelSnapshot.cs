@@ -22,49 +22,6 @@ namespace TicketingSystem.Infrastructure.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("TicketingSystem.Domain.Entities.Attachment", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("ContentType")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("FileName")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)");
-
-                    b.Property<string>("FilePath")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<long>("FileSize")
-                        .HasColumnType("bigint");
-
-                    b.Property<int?>("TicketId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("TicketMessageId")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("UploadedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TicketId");
-
-                    b.HasIndex("TicketMessageId");
-
-                    b.ToTable("Attachments");
-                });
-
             modelBuilder.Entity("TicketingSystem.Domain.Entities.Ticket", b =>
                 {
                     b.Property<int>("Id")
@@ -73,57 +30,45 @@ namespace TicketingSystem.Infrastructure.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<int?>("AssignedToId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("ClientId")
+                    b.Property<int?>("AssignedToUserId")
                         .HasColumnType("integer");
 
                     b.Property<DateTime?>("ClosedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("ClosingNotes")
-                        .IsRequired()
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<int>("CreatedByUserId")
+                        .HasColumnType("integer");
+
                     b.Property<string>("Description")
                         .IsRequired()
-                        .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)");
-
-                    b.Property<string>("Priority")
-                        .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.Property<int>("Priority")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
 
                     b.Property<string>("Title")
                         .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
+                        .HasColumnType("text");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("AssignedToId");
+                    b.HasIndex("AssignedToUserId");
 
-                    b.HasIndex("ClientId");
+                    b.HasIndex("CreatedByUserId");
 
-                    b.HasIndex("CreatedAt");
-
-                    b.HasIndex("Priority");
-
-                    b.HasIndex("Status");
-
-                    b.ToTable("Tickets");
+                    b.ToTable("Tickets", (string)null);
                 });
 
             modelBuilder.Entity("TicketingSystem.Domain.Entities.TicketMessage", b =>
@@ -136,13 +81,12 @@ namespace TicketingSystem.Infrastructure.Migrations
 
                     b.Property<string>("Content")
                         .IsRequired()
-                        .HasMaxLength(5000)
-                        .HasColumnType("character varying(5000)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<bool>("IsInternal")
+                    b.Property<bool>("IsInternalNote")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
                         .HasDefaultValue(false);
@@ -155,13 +99,11 @@ namespace TicketingSystem.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CreatedAt");
-
                     b.HasIndex("TicketId");
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("TicketMessages");
+                    b.ToTable("TicketMessages", (string)null);
                 });
 
             modelBuilder.Entity("TicketingSystem.Domain.Entities.User", b =>
@@ -172,72 +114,53 @@ namespace TicketingSystem.Infrastructure.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
-                    b.Property<string>("FullName")
+                    b.Property<string>("IdentityUserId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("character varying(450)");
+
+                    b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
-                    b.Property<bool>("IsActive")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(true);
-
-                    b.Property<string>("PasswordHash")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
                     b.Property<string>("Role")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
 
                     b.HasKey("Id");
 
                     b.HasIndex("Email")
                         .IsUnique();
 
-                    b.ToTable("Users");
-                });
+                    b.HasIndex("IdentityUserId")
+                        .IsUnique();
 
-            modelBuilder.Entity("TicketingSystem.Domain.Entities.Attachment", b =>
-                {
-                    b.HasOne("TicketingSystem.Domain.Entities.Ticket", null)
-                        .WithMany("Attachments")
-                        .HasForeignKey("TicketId");
-
-                    b.HasOne("TicketingSystem.Domain.Entities.TicketMessage", "TicketMessage")
-                        .WithMany("Attachments")
-                        .HasForeignKey("TicketMessageId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("TicketMessage");
+                    b.ToTable("Users", (string)null);
                 });
 
             modelBuilder.Entity("TicketingSystem.Domain.Entities.Ticket", b =>
                 {
-                    b.HasOne("TicketingSystem.Domain.Entities.User", "AssignedTo")
+                    b.HasOne("TicketingSystem.Domain.Entities.User", "AssignedToUser")
                         .WithMany("AssignedTickets")
-                        .HasForeignKey("AssignedToId")
+                        .HasForeignKey("AssignedToUserId")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("TicketingSystem.Domain.Entities.User", "Client")
+                    b.HasOne("TicketingSystem.Domain.Entities.User", "CreatedByUser")
                         .WithMany("CreatedTickets")
-                        .HasForeignKey("ClientId")
+                        .HasForeignKey("CreatedByUserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.Navigation("AssignedTo");
+                    b.Navigation("AssignedToUser");
 
-                    b.Navigation("Client");
+                    b.Navigation("CreatedByUser");
                 });
 
             modelBuilder.Entity("TicketingSystem.Domain.Entities.TicketMessage", b =>
@@ -261,14 +184,7 @@ namespace TicketingSystem.Infrastructure.Migrations
 
             modelBuilder.Entity("TicketingSystem.Domain.Entities.Ticket", b =>
                 {
-                    b.Navigation("Attachments");
-
                     b.Navigation("Messages");
-                });
-
-            modelBuilder.Entity("TicketingSystem.Domain.Entities.TicketMessage", b =>
-                {
-                    b.Navigation("Attachments");
                 });
 
             modelBuilder.Entity("TicketingSystem.Domain.Entities.User", b =>

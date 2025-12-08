@@ -21,7 +21,7 @@ public class AddMessageToTicketCommandHandler : IRequestHandler<AddMessageToTick
     public async Task<int> Handle(AddMessageToTicketCommand request, CancellationToken cancellationToken)
     {
         var ticket = await _context.Tickets
-            .FirstOrDefaultAsync(t => t.Id == request.TicketId && t.ClientId == request.ClientId, cancellationToken);
+            .FirstOrDefaultAsync(t => t.Id == request.TicketId && t.CreatedByUserId == request.ClientId, cancellationToken);
 
         if (ticket == null)
             throw new UnauthorizedAccessException("Ticket not found or unauthorized");
@@ -34,7 +34,7 @@ public class AddMessageToTicketCommandHandler : IRequestHandler<AddMessageToTick
             Content = request.Content,
             TicketId = request.TicketId,
             UserId = request.ClientId,
-            IsInternal = false,
+            IsInternalNote = false,
             CreatedAt = DateTime.UtcNow
         };
 

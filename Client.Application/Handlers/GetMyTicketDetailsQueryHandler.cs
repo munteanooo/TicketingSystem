@@ -1,64 +1,65 @@
 ﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Client.Application.Queries;
-using Client.Application.DTOs;
+using TicketingSystem.Domain.Entities;
 using TicketingSystem.Infrastructure.Data;
+using Client.Application.DTOs;
+using Client.Application.Queries;
 
-namespace Client.Application.Handlers;
-
-public class GetTicketDetailsQueryHandler : IRequestHandler<GetTicketDetailsQuery, TicketDetailsDto?>
+namespace Client.Application.Handlers
 {
-    private readonly ApplicationDbContext _context;
-
-    public GetTicketDetailsQueryHandler(ApplicationDbContext context)
+    public class GetMyTicketDetailsQueryHandler : IRequestHandler<GetTicketDetailsQuery, TicketDetailsDto?>
     {
-        _context = context;
-    }
+        private readonly ApplicationDbContext _context;
 
-    public async Task<TicketDetailsDto?> Handle(GetTicketDetailsQuery request, CancellationToken cancellationToken)
-    {
-        var ticket = await _context.Tickets
-            .Where(t => t.Id == request.TicketId && t.ClientId == request.ClientId)
-            .Include(t => t.Client)
-            .Include(t => t.AssignedTo)
-            .Include(t => t.Messages)
-                .ThenInclude(m => m.User)
-            .Include(t => t.Messages)
-                .ThenInclude(m => m.Attachments)
-            .FirstOrDefaultAsync(cancellationToken);
-
-        return ticket == null ? null : new TicketDetailsDto
+        public GetMyTicketDetailsQueryHandler(ApplicationDbContext context)
         {
-            Id = ticket.Id,
-            Title = ticket.Title,
-            Description = ticket.Description,
-            Priority = ticket.Priority,
-            Status = ticket.Status,
-            CreatedAt = ticket.CreatedAt,
-            UpdatedAt = ticket.UpdatedAt,
-            ClosedAt = ticket.ClosedAt,
-            ClosingNotes = ticket.ClosingNotes,
-            ClientId = ticket.ClientId,
-            ClientName = ticket.Client.FullName,
-            AssignedToId = ticket.AssignedToId,
-            AssignedToName = ticket.AssignedTo?.FullName,
-            Messages = ticket.Messages.Select(m => new TicketMessageDto
+            _context = context;
+        }
+
+        public async Task<TicketDetailsDto?> Handle(GetTicketDetailsQuery request, CancellationToken cancellationToken)
+        {
+            var ticket = await _context.Tickets
+                .Include(t => t.CreatedByUser)
+                .Include(t => t.AssignedToUser)
+                .Include(t => t.Messages)
+                    .ThenInclude(m => m.User)
+                .FirstOrDefaultAsync(t =>
+                    t.Id == request.TicketId &&
+                    t.CreatedByUserId == request.ClientId,
+                    cancellationToken);
+
+            if (ticket == null)
+                return null;
+
+            return new TicketDetailsDto
             {
-                Id = m.Id,
-                Content = m.Content,
-                CreatedAt = m.CreatedAt,
-                IsInternal = m.IsInternal,
-                UserId = m.UserId,
-                UserName = m.User.FullName,
-                Attachments = m.Attachments.Select(a => new AttachmentDto
+                Id = ticket.Id,
+                Title = ticket.Title,
+                Description = ticket.Description,
+                Priority = ticket.Priority,
+                Status = ticket.Status,
+                CreatedAt = ticket.CreatedAt,
+                UpdatedAt = ticket.UpdatedAt,
+                ClosedAt = ticket.ClosedAt,
+                ClosingNotes = ticket.ClosingNotes,
+                CreatedByUserId = ticket.CreatedByUserId,
+                CreatedByUserName = ticket.CreatedByUser.Name,
+                CreatedByUserEmail = ticket.CreatedByUser.Email,
+                AssignedToUserId = ticket.AssignedToUserId,
+                AssignedToUserName = ticket.AssignedToUser?.Name,
+                AssignedToUserEmail = ticket.AssignedToUser?.Email,
+                Messages = ticket.Messages.Select(m => new TicketMessageDto
                 {
-                    Id = a.Id,
-                    FileName = a.FileName,
-                    ContentType = a.ContentType,
-                    FileSize = a.FileSize,
-                    UploadedAt = a.UploadedAt
+                    Id = m.Id,
+                    Content = m.Content,
+                    CreatedAt = m.CreatedAt,
+                    IsInternalNote = m.IsInternalNote,
+                    UserId = m.UserId,
+                    UserName = m.User.Name,
+                    UserEmail = m.User.Email,
+                    UserRole = m.User.Role.ToString()
                 }).ToList()
-            }).OrderBy(m => m.CreatedAt).ToList()
-        };
+            };
+        }
     }
 }

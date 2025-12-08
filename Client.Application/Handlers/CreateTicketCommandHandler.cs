@@ -1,6 +1,4 @@
 ﻿using MediatR;
-using System.Threading;
-using System.Threading.Tasks;
 using TicketingSystem.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using TicketingSystem.Domain.Entities;
@@ -32,7 +30,7 @@ public class CreateTicketCommandHandler : IRequestHandler<CreateTicketCommand, i
             Description = request.Description,
             Priority = request.Priority,
             Status = TicketStatus.Open,
-            ClientId = request.ClientId,
+            CreatedByUserId = request.ClientId,
             CreatedAt = DateTime.UtcNow
         };
 

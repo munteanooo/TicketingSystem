@@ -3,52 +3,47 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using TicketingSystem.Domain.Entities;
 using TicketingSystem.Domain.Enums;
 
-namespace TicketingSystem.Infrastructure.Configurations;
-
-public class UserConfiguration : IEntityTypeConfiguration<User>
+namespace TicketingSystem.Infrastructure.Configurations
 {
-    public void Configure(EntityTypeBuilder<User> builder)
+    public class UserConfiguration : IEntityTypeConfiguration<User>
     {
-        builder.HasKey(u => u.Id);
+        public void Configure(EntityTypeBuilder<User> builder)
+        {
+            builder.ToTable("Users");
 
-        builder.Property(u => u.FullName)
-            .IsRequired()
-            .HasMaxLength(100);
+            builder.HasKey(u => u.Id);
 
-        builder.Property(u => u.Email)
-            .IsRequired()
-            .HasMaxLength(100);
+            builder.Property(u => u.Name)
+                .IsRequired()
+                .HasMaxLength(100);
 
-        builder.HasIndex(u => u.Email)
-            .IsUnique();
+            builder.Property(u => u.Email)
+                .IsRequired()
+                .HasMaxLength(100);
 
-        builder.Property(u => u.PasswordHash)
-            .IsRequired()
-            .HasMaxLength(500);
+            builder.Property(u => u.Role)
+                .HasConversion<string>()
+                .HasMaxLength(50);
 
-        builder.Property(u => u.Role)
-            .HasConversion<string>()
-            .IsRequired();
+            builder.Property(u => u.IdentityUserId)
+                .IsRequired()
+                .HasMaxLength(450);
 
-        builder.Property(u => u.CreatedAt)
-            .IsRequired();
+            builder.HasIndex(u => u.IdentityUserId)
+                .IsUnique();
 
-        builder.Property(u => u.IsActive)
-            .HasDefaultValue(true);
+            builder.HasIndex(u => u.Email)
+                .IsUnique();
 
-        builder.HasMany(u => u.CreatedTickets)
-            .WithOne(t => t.Client)
-            .HasForeignKey(t => t.ClientId)
-            .OnDelete(DeleteBehavior.Restrict);
+            builder.HasMany(u => u.CreatedTickets)
+                .WithOne(t => t.CreatedByUser)
+                .HasForeignKey(t => t.CreatedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasMany(u => u.AssignedTickets)
-            .WithOne(t => t.AssignedTo)
-            .HasForeignKey(t => t.AssignedToId)
-            .OnDelete(DeleteBehavior.Restrict);
-
-        builder.HasMany(u => u.Messages)
-            .WithOne(m => m.User)
-            .HasForeignKey(m => m.UserId)
-            .OnDelete(DeleteBehavior.Restrict);
+            builder.HasMany(u => u.AssignedTickets)
+                .WithOne(t => t.AssignedToUser)
+                .HasForeignKey(t => t.AssignedToUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+        }
     }
 }

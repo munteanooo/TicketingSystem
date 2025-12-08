@@ -10,12 +10,9 @@ public class ApplicationDbContext : DbContext
         : base(options)
     {
     }
-
     public DbSet<User> Users { get; set; }
     public DbSet<Ticket> Tickets { get; set; }
     public DbSet<TicketMessage> TicketMessages { get; set; }
-    public DbSet<Attachment> Attachments { get; set; }
-
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -23,6 +20,5 @@ public class ApplicationDbContext : DbContext
         modelBuilder.ApplyConfiguration(new UserConfiguration());
         modelBuilder.ApplyConfiguration(new TicketConfiguration());
         modelBuilder.ApplyConfiguration(new TicketMessageConfiguration());
-        modelBuilder.ApplyConfiguration(new AttachmentConfiguration());
     }
 }

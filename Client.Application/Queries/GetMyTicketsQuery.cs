@@ -1,9 +1,8 @@
 ﻿using MediatR;
 using Client.Application.DTOs;
-using System.Collections.Generic;
 using TicketingSystem.Domain.Enums;
 
-namespace Client.Application.Queries;
+namespace GetMyTicketsQuery;
 
 public class GetMyTicketsQuery : IRequest<List<TicketDto>>
 {
