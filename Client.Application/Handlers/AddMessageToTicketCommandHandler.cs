@@ -1,19 +1,26 @@
-﻿using Client.Application.Commands;
-using MediatR;
+﻿using MediatR;
+using System.Threading;
+using System.Threading.Tasks;
+using TicketingSystem.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using TicketingSystem.Domain.Entities;
 using TicketingSystem.Domain.Enums;
-using TicketingSystem.Infrastructure.Data;
+using Client.Application.Commands;
 
 namespace Client.Application.Handlers;
 
-public class AddMessageToTicketCommandHandler(
-    ApplicationDbContext context
-    ) : IRequestHandler<AddMessageToTicketCommand, int>
+public class AddMessageToTicketCommandHandler : IRequestHandler<AddMessageToTicketCommand, int>
 {
+    private readonly ApplicationDbContext _context;
+
+    public AddMessageToTicketCommandHandler(ApplicationDbContext context)
+    {
+        _context = context;
+    }
+
     public async Task<int> Handle(AddMessageToTicketCommand request, CancellationToken cancellationToken)
     {
-        var ticket = await context.Tickets
+        var ticket = await _context.Tickets
             .FirstOrDefaultAsync(t => t.Id == request.TicketId && t.ClientId == request.ClientId, cancellationToken);
 
         if (ticket == null)
@@ -33,8 +40,8 @@ public class AddMessageToTicketCommandHandler(
 
         ticket.UpdatedAt = DateTime.UtcNow;
 
-        await context.TicketMessages.AddAsync(message, cancellationToken);
-        await context.SaveChangesAsync(cancellationToken);
+        await _context.TicketMessages.AddAsync(message, cancellationToken);
+        await _context.SaveChangesAsync(cancellationToken);
 
         return message.Id;
     }
