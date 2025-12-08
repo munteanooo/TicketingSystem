@@ -1,0 +1,69 @@
+﻿@page "/login"
+@inject HttpClient Http
+@inject NavigationManager Navigation
+
+<h3>Login</h3>
+
+<div>
+    <div style="margin-bottom: 15px;">
+        <label>Email:</label>
+        <input type="email" @bind="email" @bind:event="oninput"
+               style="width: 300px; padding: 5px;" />
+    </div>
+
+    <div style="margin-bottom: 15px;">
+        <label>Password:</label>
+        <input type="password" @bind="password" @bind:event="oninput"
+               style="width: 300px; padding: 5px;" />
+    </div>
+
+    <button @onclick="HandleLogin" style="padding: 10px 20px;">
+        Login
+    </button>
+
+    @if (!string.IsNullOrEmpty(message))
+    {
+        <div style="margin-top: 15px; color: @(isError ? "red" : "green")">
+            @message
+        </div>
+    }
+
+    <div style="margin-top: 20px;">
+        <a href="/register">Don't have an account? Register</a>
+    </div>
+</div>
+
+@code {
+    private string email = "";
+    private string password = "";
+    private string message = "";
+    private bool isError = false;
+
+    private async Task HandleLogin()
+    {
+        try
+        {
+            var loginData = new { email = email, password = password };
+            var response = await Http.PostAsJsonAsync("api/auth/login", loginData);
+
+            if (response.IsSuccessStatusCode)
+            {
+                message = "Login successful!";
+                isError = false;
+
+                // Redirect to home
+                Navigation.NavigateTo("/", true);
+            }
+            else
+            {
+                message = "Invalid email or password";
+                isError = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            message = $"Connection error: {ex.Message}";
+            isError = true;
+        }
+    }
+}
