@@ -1,21 +1,12 @@
-﻿using MediatR;
-using System.ComponentModel.DataAnnotations;
-using TicketingSystem.Domain.Enums;
-
-namespace Client.Application.Commands;
-
-public class CreateTicketCommand : IRequest<int>
+﻿namespace TicketingSystem.Application.Commands
 {
-    [Required]
-    [StringLength(200)]
-    public string Title { get; set; } = string.Empty;
+    using System;
+    using MediatR;
+    using TicketingSystem.Application.DTOs;
 
-    [Required]
-    [StringLength(1000)]
-    public string Description { get; set; } = string.Empty;
-
-    public TicketPriority Priority { get; set; }
-
-    [Required]
-    public int ClientId { get; set; }
+    public class CreateTicketCommand : IRequest<TicketDto>
+    {
+        public Guid ClientId { get; set; }
+        public CreateTicketDto Ticket { get; set; }
+    }
 }

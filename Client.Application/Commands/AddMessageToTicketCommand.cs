@@ -1,17 +1,12 @@
 ﻿using MediatR;
-using System.ComponentModel.DataAnnotations;
+using TicketingSystem.Application.DTOs;
 
-namespace Client.Application.Commands;
-
-public class AddMessageToTicketCommand : IRequest<int>
+namespace Client.Application.Commands
 {
-    [Required]
-    public int TicketId { get; set; }
-
-    [Required]
-    public int ClientId { get; set; }
-
-    [Required]
-    [StringLength(5000)]
-    public string Content { get; set; } = string.Empty;
+    public class AddMessageToTicketCommand : IRequest<TicketMessageDto>
+    {
+        public Guid TicketId { get; set; }
+        public Guid AuthorId { get; set; }
+        public string Content { get; set; }
+    }
 }

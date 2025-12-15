@@ -1,24 +1,30 @@
-﻿using Microsoft.EntityFrameworkCore;
-using TicketingSystem.Domain.Entities;
-using TicketingSystem.Infrastructure.Configurations;
-
-namespace TicketingSystem.Infrastructure.Data;
-
-public class ApplicationDbContext : DbContext
+﻿namespace TicketingSystem.Infrastructure.Data
 {
-    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
-        : base(options)
-    {
-    }
-    public DbSet<User> Users { get; set; }
-    public DbSet<Ticket> Tickets { get; set; }
-    public DbSet<TicketMessage> TicketMessages { get; set; }
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
-    {
-        base.OnModelCreating(modelBuilder);
+    using Microsoft.AspNetCore.Identity;
+    using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+    using Microsoft.EntityFrameworkCore;
+    using TicketingSystem.Domain.Entities;
+    using TicketingSystem.Infrastructure.Identity;
+    using TicketingSystem.Infrastructure.Configurations;
 
-        modelBuilder.ApplyConfiguration(new UserConfiguration());
-        modelBuilder.ApplyConfiguration(new TicketConfiguration());
-        modelBuilder.ApplyConfiguration(new TicketMessageConfiguration());
+    public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid>
+    {
+        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
+            : base(options)
+        {
+        }
+
+        public DbSet<DomainUser> DomainUsers { get; set; }
+        public DbSet<Ticket> Tickets { get; set; }
+        public DbSet<TicketMessage> TicketMessages { get; set; }
+
+        protected override void OnModelCreating(ModelBuilder builder)
+        {
+            base.OnModelCreating(builder);
+
+            builder.ApplyConfiguration(new DomainUserConfiguration());
+            builder.ApplyConfiguration(new TicketConfiguration());
+            builder.ApplyConfiguration(new TicketMessageConfiguration());
+        }
     }
 }

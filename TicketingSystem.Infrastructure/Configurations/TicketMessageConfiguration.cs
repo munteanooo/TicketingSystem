@@ -8,30 +8,29 @@ namespace TicketingSystem.Infrastructure.Configurations
     {
         public void Configure(EntityTypeBuilder<TicketMessage> builder)
         {
-            builder.ToTable("TicketMessages");
+            builder.HasKey(x => x.Id);
 
-            builder.HasKey(m => m.Id);
+            builder.Property(x => x.Id).ValueGeneratedNever();
 
-            builder.Property(m => m.Content)
+            builder.Property(x => x.Content)
                 .IsRequired()
-                .HasColumnType("nvarchar(max)");
+                .HasMaxLength(5000);
 
-            builder.Property(m => m.CreatedAt)
-                .IsRequired();
+            builder.Property(x => x.CreatedAt).IsRequired();
 
-            builder.Property(m => m.IsInternalNote)
-                .IsRequired()
-                .HasDefaultValue(false);
-
-            builder.HasOne(m => m.Ticket)
+            builder.HasOne(x => x.Ticket)
                 .WithMany(t => t.Messages)
-                .HasForeignKey(m => m.TicketId)
+                .HasForeignKey(x => x.TicketId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            builder.HasOne(m => m.User)
+            builder.HasOne(x => x.Author)
                 .WithMany(u => u.Messages)
-                .HasForeignKey(m => m.UserId)
-                .OnDelete(DeleteBehavior.Restrict);
+                .HasForeignKey(x => x.AuthorId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            builder.HasIndex(x => x.TicketId);
+            builder.HasIndex(x => x.AuthorId);
+            builder.HasIndex(x => x.CreatedAt);
         }
     }
 }

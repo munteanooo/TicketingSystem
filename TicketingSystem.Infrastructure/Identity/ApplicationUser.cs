@@ -1,9 +1,10 @@
-﻿using Microsoft.AspNetCore.Identity;
-
-namespace TicketingSystem.Infrastructure.Identity
+﻿namespace TicketingSystem.Infrastructure.Identity
 {
-    public class ApplicationUser : IdentityUser
+    using Microsoft.AspNetCore.Identity;
+    using System;
+
+    public class ApplicationUser : IdentityUser<Guid>
     {
-        public string FullName { get; set; }
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 }
