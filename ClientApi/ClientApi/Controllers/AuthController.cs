@@ -1,172 +1,82 @@
-﻿namespace ClientApi.Controllers
-{
-    using System;
-    using System.Threading.Tasks;
-    using Microsoft.AspNetCore.Identity;
-    using Microsoft.AspNetCore.Mvc;
-    using Microsoft.Extensions.Configuration;
-    using System.IdentityModel.Tokens.Jwt;
-    using Microsoft.IdentityModel.Tokens;
-    using System.Security.Claims;
-    using System.Text;
-    using TicketingSystem.Infrastructure.Identity;
-    using TicketingSystem.Domain.Entities;
-    using TicketingSystem.Infrastructure.Data;
-    using ClientApi.Models;
+﻿using Microsoft.AspNetCore.Mvc;
+using Client.Application.DTOs;
+using TicketingSystem.Domain.Entities;
+using TicketingSystem.Domain.Interfaces;
+using TicketingSystem.Infrastructure.Services;
 
+namespace TicketingSystem.API.Controllers
+{
     [ApiController]
     [Route("api/[controller]")]
     public class AuthController : ControllerBase
     {
-        private readonly UserManager<ApplicationUser> _userManager;
-        private readonly SignInManager<ApplicationUser> _signInManager;
-        private readonly IConfiguration _configuration;
-        private readonly ApplicationDbContext _context;
+        private readonly IUnitOfWork _unitOfWork;
+        private readonly IJwtService _jwtService;
 
-        public AuthController(
-            UserManager<ApplicationUser> userManager,
-            SignInManager<ApplicationUser> signInManager,
-            IConfiguration configuration,
-            ApplicationDbContext context)
+        public AuthController(IUnitOfWork unitOfWork, IJwtService jwtService)
         {
-            _userManager = userManager;
-            _signInManager = signInManager;
-            _configuration = configuration;
-            _context = context;
-        }
-
-        [HttpPost("register")]
-        public async Task<ActionResult<AuthResponse>> Register([FromBody] RegisterRequest request)
-        {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
-            var user = new ApplicationUser
-            {
-                Id = Guid.NewGuid(),
-                Email = request.Email,
-                UserName = request.Email,
-                CreatedAt = DateTime.UtcNow
-            };
-
-            var result = await _userManager.CreateAsync(user, request.Password);
-
-            if (!result.Succeeded)
-                return BadRequest(new AuthResponse
-                {
-                    Success = false,
-                    Message = "Registration failed: " + string.Join(", ", result.Errors)
-                });
-
-            await _userManager.AddToRoleAsync(user, "Client");
-
-            var domainUser = new DomainUser
-            {
-                Id = Guid.NewGuid(),
-                IdentityUserId = user.Id,
-                FullName = request.FullName,
-                Email = request.Email,
-                PhoneNumber = request.PhoneNumber,
-                Role = TicketingSystem.Domain.Enums.UserRole.Client,
-                IsActive = true,
-                CreatedAt = DateTime.UtcNow
-            };
-
-            _context.DomainUsers.Add(domainUser);
-            await _context.SaveChangesAsync();
-
-            var token = GenerateJwtToken(user, domainUser);
-
-            return Ok(new AuthResponse
-            {
-                Success = true,
-                Message = "Registration successful",
-                Token = token,
-                User = new UserInfo
-                {
-                    Id = domainUser.Id,
-                    Email = user.Email,
-                    FullName = domainUser.FullName,
-                    PhoneNumber = domainUser.PhoneNumber,
-                    Role = "Client"
-                }
-            });
+            _unitOfWork = unitOfWork;
+            _jwtService = jwtService;
         }
 
         [HttpPost("login")]
-        public async Task<ActionResult<AuthResponse>> Login([FromBody] LoginRequest request)
+        public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+            if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Password))
+                return BadRequest("Email and password are required");
 
-            var user = await _userManager.FindByEmailAsync(request.Email);
+            var user = await _unitOfWork.Users.GetByEmailAsync(request.Email);
 
-            if (user == null)
-                return Unauthorized(new AuthResponse
-                {
-                    Success = false,
-                    Message = "Invalid email or password"
-                });
+            if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
+                return Unauthorized("Invalid email or password");
 
-            var result = await _signInManager.CheckPasswordSignInAsync(user, request.Password, false);
+            if (!user.IsActive)
+                return Unauthorized("User account is inactive");
 
-            if (!result.Succeeded)
-                return Unauthorized(new AuthResponse
-                {
-                    Success = false,
-                    Message = "Invalid email or password"
-                });
-
-            var domainUser = _context.DomainUsers.FirstOrDefault(du => du.IdentityUserId == user.Id);
-
-            if (domainUser == null || !domainUser.IsActive)
-                return Unauthorized(new AuthResponse
-                {
-                    Success = false,
-                    Message = "User account is not active"
-                });
-
-            var token = GenerateJwtToken(user, domainUser);
-
-            return Ok(new AuthResponse
+            var token = _jwtService.GenerateToken(user);
+            var response = new LoginResponse
             {
-                Success = true,
-                Message = "Login successful",
                 Token = token,
-                User = new UserInfo
+                User = new UserDto
                 {
-                    Id = domainUser.Id,
+                    Id = user.Id,
                     Email = user.Email,
-                    FullName = domainUser.FullName,
-                    PhoneNumber = domainUser.PhoneNumber,
-                    Role = domainUser.Role.ToString()
+                    FirstName = user.FirstName,
+                    LastName = user.LastName,
+                    Role = user.Role.ToString()
                 }
-            });
+            };
+            return Ok(response);
         }
 
-        private string GenerateJwtToken(ApplicationUser user, DomainUser domainUser)
+        [HttpPost("register")]
+        public async Task<IActionResult> Register([FromBody] RegisterRequest request)
         {
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.ASCII.GetBytes(_configuration["Jwt:Secret"]);
+            if (string.IsNullOrWhiteSpace(request.Email) ||
+                string.IsNullOrWhiteSpace(request.Password) ||
+                string.IsNullOrWhiteSpace(request.FirstName) ||
+                string.IsNullOrWhiteSpace(request.LastName))
+                return BadRequest("All fields are required");
 
-            var tokenDescriptor = new SecurityTokenDescriptor
+            var existingUser = await _unitOfWork.Users.GetByEmailAsync(request.Email);
+            if (existingUser != null)
+                return BadRequest("Email already exists");
+
+            var user = new ApplicationUser(
+                email: request.Email,
+                firstName: request.FirstName,
+                lastName: request.LastName,
+                role: TicketingSystem.Domain.Enums.UserRole.Client
+            )
             {
-                Subject = new ClaimsIdentity(new[]
-                {
-                    new Claim(ClaimTypes.NameIdentifier, domainUser.Id.ToString()),
-                    new Claim(ClaimTypes.Email, user.Email),
-                    new Claim(ClaimTypes.Name, domainUser.FullName),
-                    new Claim("IdentityUserId", user.Id.ToString()),
-                    new Claim(ClaimTypes.Role, domainUser.Role.ToString())
-                }),
-                Expires = DateTime.UtcNow.AddHours(24),
-                Issuer = _configuration["Jwt:Issuer"],
-                Audience = _configuration["Jwt:Audience"],
-                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
+                IsActive = true
             };
 
-            var token = tokenHandler.CreateToken(tokenDescriptor);
-            return tokenHandler.WriteToken(token);
+            await _unitOfWork.Users.AddAsync(user);
+            await _unitOfWork.SaveChangesAsync();
+
+            return Ok(new { message = "User registered successfully. Please log in." });
         }
     }
 }

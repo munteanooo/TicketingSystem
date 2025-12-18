@@ -1,121 +1,106 @@
-using System.Text;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Diagnostics;
+﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
-using Serilog;
+using Microsoft.OpenApi.Models;
 using TicketingSystem.Application.Commands;
+using TicketingSystem.Infrastructure.Services;
+using TicketingSystem.Domain.Interfaces;
 using TicketingSystem.Infrastructure.Data;
-using TicketingSystem.Infrastructure.Extensions;
+using TicketingSystem.Infrastructure.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
-var configuration = builder.Configuration;
 
-// Serilog Configuration
-Log.Logger = new LoggerConfiguration()
-    .ReadFrom.Configuration(configuration)
-    .CreateLogger();
-
-builder.Host.UseSerilog();
-
-// DbContext - PostgreSQL
-var connectionString = configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseNpgsql(connectionString, npgsqlOptions =>
-    {
-        npgsqlOptions.MigrationsAssembly("TicketingSystem.Infrastructure");
-        npgsqlOptions.EnableRetryOnFailure(
-            maxRetryCount: 3,
-            maxRetryDelay: TimeSpan.FromSeconds(5),
-            errorCodesToAdd: null
-        );
-    }));
+    options.UseNpgsql(
+        builder.Configuration.GetConnectionString("DefaultConnection"),
+        npgsqlOptions => npgsqlOptions.MigrationsAssembly("TicketingSystem.Infrastructure")
+    )
+);
 
-// Infrastructure Setup
-builder.Services.AddInfrastructure(configuration);
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+builder.Services.AddScoped<ITicketRepository, TicketRepository>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
 
-// MediatR Configuration
 builder.Services.AddMediatR(cfg =>
+    cfg.RegisterServicesFromAssembly(typeof(CreateTicketCommand).Assembly)
+);
+
+builder.Services.AddAuthentication(options =>
 {
-    cfg.RegisterServicesFromAssembly(typeof(CreateTicketCommand).Assembly);
+    options.DefaultAuthenticateScheme = "Bearer";
+    options.DefaultChallengeScheme = "Bearer";
+})
+.AddJwtBearer("Bearer", options =>
+{
+    var secretKey = builder.Configuration["Jwt:Key"];
+    var key = System.Text.Encoding.UTF8.GetBytes(secretKey);
+
+    options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+    {
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(key),
+        ValidateIssuer = true,
+        ValidIssuer = builder.Configuration["Jwt:Issuer"],
+        ValidateAudience = true,
+        ValidAudience = builder.Configuration["Jwt:Audience"],
+        ValidateLifetime = true,
+        ClockSkew = TimeSpan.Zero
+    };
 });
 
-// JWT Authentication
-var jwtSettings = configuration.GetSection("Jwt");
-var jwtKey = jwtSettings["Key"] ?? throw new InvalidOperationException("JWT Key not configured");
-var jwtIssuer = jwtSettings["Issuer"] ?? throw new InvalidOperationException("JWT Issuer not configured");
-var jwtAudience = jwtSettings["Audience"] ?? throw new InvalidOperationException("JWT Audience not configured");
-
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
-    {
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
-            ValidateIssuer = true,
-            ValidIssuer = jwtIssuer,
-            ValidateAudience = true,
-            ValidAudience = jwtAudience,
-            ValidateLifetime = true,
-            ClockSkew = TimeSpan.Zero
-        };
-    });
-
 builder.Services.AddAuthorization();
-
-// Controllers
-builder.Services.AddControllers();
-
-// CORS Configuration
-var allowedOrigins = configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
-    ?? new[] { "http://localhost:3000", "http://localhost:5173" };
+builder.Services.AddScoped<IJwtService, JwtService>();
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowSpecificOrigins", policy =>
-    {
-        policy.WithOrigins(allowedOrigins)
+    options.AddPolicy("AllowAll", policy =>
+        policy.AllowAnyOrigin()
               .AllowAnyMethod()
               .AllowAnyHeader()
-              .AllowCredentials();
+    );
+});
+
+builder.Services.AddControllers();
+
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "Client API",
+        Version = "v1",
+        Description = "Client-side Ticketing System API"
     });
 });
 
-// HttpContextAccessor for User context in services
-builder.Services.AddHttpContextAccessor();
-
-// Build Application
 var app = builder.Build();
 
-// Middleware Pipeline
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    try
+    {
+        db.Database.Migrate();
+    }
+    catch (Exception ex)
+    {
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "Migration error");
+    }
+}
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Client API V1");
+        c.RoutePrefix = string.Empty;
+    });
+}
+
 app.UseHttpsRedirection();
-app.UseSerilogRequestLogging();
-app.UseCors("AllowSpecificOrigins");
+app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
-
-// Error Handling Middleware
-app.UseExceptionHandler(errorApp =>
-{
-    errorApp.Run(async context =>
-    {
-        context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-        context.Response.ContentType = "application/json";
-
-        var exceptionHandlerPathFeature = context.Features.Get<IExceptionHandlerPathFeature>();
-        var exception = exceptionHandlerPathFeature?.Error;
-
-        Log.Error(exception, "Unhandled exception occurred");
-
-        await context.Response.WriteAsJsonAsync(new
-        {
-            statusCode = StatusCodes.Status500InternalServerError,
-            message = "An internal server error occurred",
-            detail = app.Environment.IsDevelopment() ? exception?.Message : null
-        });
-    });
-});
-
 app.Run();

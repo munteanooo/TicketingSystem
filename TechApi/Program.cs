@@ -1,35 +1,35 @@
-//using Microsoft.AspNetCore.Identity;
-//using TicketingSystem.Infrastructure.Data;
-//using TicketingSystem.Infrastructure.Identity;
-//using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
+using TicketingSystem.Infrastructure.Data;
 
-//var builder = WebApplication.CreateBuilder(args);
+var builder = WebApplication.CreateBuilder(args);
 
-//builder.Services.AddDbContext<ApplicationDbContext>(options =>
-//    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+// --- DbContext ---
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-//builder.Services.AddDbContext<ApplicationIdentityDbContext>(options =>
-//    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-//builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
-//    .AddEntityFrameworkStores<ApplicationIdentityDbContext>()
-//    .AddDefaultTokenProviders();
+// --- Controllers ---
+builder.Services.AddControllers();
 
-//builder.Services.AddControllers();
-//builder.Services.AddOpenApi();
+// --- Swagger / OpenAPI ---
+builder.Services.AddEndpointsApiExplorer(); // pentru Minimal APIs
+builder.Services.AddSwaggerGen();
 
-//var app = builder.Build();
+// Build app
+var app = builder.Build();
 
-//if (app.Environment.IsDevelopment())
-//{
-//    app.MapOpenApi();
-//}
+// --- Middleware ---
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 
-//app.UseHttpsRedirection();
+app.UseHttpsRedirection();
 
-//app.UseAuthentication(); 
-//app.UseAuthorization();
+app.UseAuthentication();
+app.UseAuthorization();
 
-//app.MapControllers();
+app.MapControllers();
 
-//app.Run();
+app.Run();

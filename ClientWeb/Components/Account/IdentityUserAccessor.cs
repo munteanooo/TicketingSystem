@@ -1,5 +1,5 @@
-using ClientWeb.Data;
 using Microsoft.AspNetCore.Identity;
+using TicketingSystem.Domain.Entities;
 
 namespace ClientWeb.Components.Account
 {

@@ -1,7 +1,61 @@
 ﻿@page "/"
+@using Blazored.LocalStorage
+@inject NavigationManager Navigation
+@inject ILocalStorageService LocalStorage
 
 <PageTitle>Home</PageTitle>
 
-<h1>Hello, world!</h1>
+<h1>Welcome to Pride Solutions</h1>
+<p>
+    Pride Solutions este o companie dedicată livrării de soluții software personalizate pentru afaceri de orice dimensiune.
+    Ne concentrăm pe eficiență, calitate și suport tehnic de top.
+</p>
 
-Welcome to your new app.
+<section class="mt-4">
+    <h2>Sistemul de Ticketing</h2>
+    <p>
+        În această secțiune, angajații și clienții pot crea, urmări și gestiona tichetele pentru proiecte și solicitări tehnice.
+        Sistemul nostru permite monitorizarea rapidă a problemelor și alocarea eficientă către echipele responsabile.
+    </p>
+
+    @if (IsLoggedIn)
+    {
+        <div>
+            <a class="btn btn-primary" href="/tickets">Tichete</a>
+            <button class="btn btn-secondary" @onclick="Logout">Logout</button>
+        </div>
+    }
+    else
+    {
+        <p>Autentifică-te pentru a accesa sistemul de tichete.</p>
+        <a class="btn btn-primary" href="/Account/Login">Log In</a>
+    }
+</section>
+
+@code {
+    private bool IsLoggedIn { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await CheckLoginStatus();
+            StateHasChanged();
+        }
+    }
+
+    private async Task CheckLoginStatus()
+    {
+        var token = await LocalStorage.GetItemAsync<string>("jwt_token");
+        IsLoggedIn = !string.IsNullOrEmpty(token);
+    }
+
+    private async Task Logout()
+    {
+        await LocalStorage.RemoveItemAsync("jwt_token");
+        await LocalStorage.RemoveItemAsync("user_id");
+        await LocalStorage.RemoveItemAsync("user_email");
+        IsLoggedIn = false;
+        Navigation.NavigateTo("/");
+    }
+}

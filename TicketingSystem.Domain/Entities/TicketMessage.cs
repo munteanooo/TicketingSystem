@@ -1,13 +1,21 @@
-﻿namespace TicketingSystem.Domain.Entities
+﻿using TicketingSystem.Domain.Entities;
+
+public class TicketMessage
 {
-    public class TicketMessage
+    public int Id { get; set; }
+    public int TicketId { get; set; }
+    public Ticket Ticket { get; set; }
+
+    public int AuthorId { get; set; }
+    public ApplicationUser Author { get; set; }
+
+    public string Content { get; set; }
+    public DateTime CreatedAt { get; set; }
+
+    public TicketMessage(string content, int authorId)
     {
-        public Guid Id { get; set; }
-        public Guid TicketId { get; set; }
-        public Guid AuthorId { get; set; }
-        public string Content { get; set; }
-        public DateTime CreatedAt { get; set; }
-        public virtual Ticket Ticket { get; set; }
-        public virtual DomainUser Author { get; set; }
+        Content = content;
+        AuthorId = authorId;
+        CreatedAt = DateTime.UtcNow;
     }
 }
