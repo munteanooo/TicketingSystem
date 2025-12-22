@@ -1,0 +1,34 @@
+﻿namespace TicketingSystem.Infrastructure.Extensions
+{
+    using Microsoft.AspNetCore.Identity;
+    using Microsoft.EntityFrameworkCore;
+    using Microsoft.Extensions.Configuration;
+    using Microsoft.Extensions.DependencyInjection;
+    using TicketingSystem.Infrastructure.Identity;
+    using TicketingSystem.Infrastructure.Data;
+
+    public static class ServiceCollectionExtensions
+    {
+        public static IServiceCollection AddInfrastructure(
+            this IServiceCollection services,
+            IConfiguration configuration)
+        {
+            services.AddDbContext<ApplicationDbContext>(options =>
+                options.UseNpgsql(
+                    configuration.GetConnectionString("DefaultConnection"),
+                    b => b.MigrationsAssembly("TicketingSystem.Infrastructure")));
+
+            services.AddIdentity<ApplicationUser, IdentityRole<Guid>>(options =>
+            {
+                options.Password.RequiredLength = 8;
+                options.Password.RequireDigit = true;
+                options.Password.RequireUppercase = true;
+                options.User.RequireUniqueEmail = true;
+            })
+            .AddEntityFrameworkStores<ApplicationDbContext>()
+            .AddDefaultTokenProviders();
+
+            return services;
+        }
+    }
+}
