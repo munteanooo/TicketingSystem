@@ -4,6 +4,7 @@ using ClientWeb.Data;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Blazored.LocalStorage;
 
 namespace ClientWeb
 {
@@ -38,6 +39,8 @@ namespace ClientWeb
                 .AddEntityFrameworkStores<ApplicationDbContext>()
                 .AddSignInManager()
                 .AddDefaultTokenProviders();
+
+            builder.Services.AddBlazoredLocalStorage();
 
             builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
 
