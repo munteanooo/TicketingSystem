@@ -5,7 +5,7 @@ namespace Client.Application.Contracts.Services
 {
     public interface IAuthService
     {
-        Task<LoginCommandResponseDto> RegisterAsync(RegisterCommand command);
+        Task<RegisterCommandResponseDto> RegisterAsync(RegisterCommand command);
         Task<LoginCommandResponseDto> LoginAsync(LoginCommand command);
         Task<LoginCommandResponseDto> RefreshTokenAsync(Guid userId);
         Task LogoutAsync(Guid userId);

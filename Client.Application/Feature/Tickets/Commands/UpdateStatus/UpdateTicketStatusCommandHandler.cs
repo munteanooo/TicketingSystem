@@ -24,32 +24,30 @@ public class UpdateTicketStatusCommandHandler : IRequestHandler<UpdateTicketStat
         if (ticket == null)
             throw new Exception("Ticket not found");
 
-        ticket.Status = Enum.Parse<TicketStatus>(request.NewStatus, ignoreCase: true);
+        ticket.Status = Enum.Parse<TicketStatus>(request.TicketStatusDto.NewStatus, ignoreCase: true);
         ticket.UpdatedAt = DateTime.UtcNow;
-
         if (ticket.Status == TicketStatus.Resolved)
             ticket.ResolvedAt = DateTime.UtcNow;
 
         await _ticketRepository.UpdateAsync(ticket);
 
-        if (!string.IsNullOrEmpty(request.Message))
+        if (!string.IsNullOrEmpty(request.TicketStatusDto.Message))
         {
             var message = new TicketMessage
             {
                 Id = Guid.NewGuid(),
-                TicketId = request.TicketId,
-                AuthorId = request.UserId,
-                Content = request.Message,
+                TicketId = ticket.Id,
+                AuthorId = request.TicketStatusDto.UserId,
+                Content = request.TicketStatusDto.Message,
                 CreatedAt = DateTime.UtcNow
             };
-
             await _ticketMessageRepository.AddAsync(message);
         }
 
         return MapToDto(ticket);
     }
 
-    private TicketCommandResponseDto MapToDto(Ticket ticket)
+    private static TicketCommandResponseDto MapToDto(Ticket ticket)
     {
         return new TicketCommandResponseDto
         {
@@ -64,7 +62,7 @@ public class UpdateTicketStatusCommandHandler : IRequestHandler<UpdateTicketStat
             AssignedToAgentId = ticket.AssignedToAgentId,
             CreatedAt = ticket.CreatedAt,
             UpdatedAt = ticket.UpdatedAt ?? DateTime.MinValue,
-            ResolvedAt = ticket.ResolvedAt ?? DateTime.MinValue
+            ResolvedAt = ticket.ResolvedAt
         };
     }
 }

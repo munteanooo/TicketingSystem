@@ -1,19 +1,22 @@
 ﻿using Client.Application.Contracts.Services;
-using Client.Application.Feature.Tickets.Commands.Login;
-using Client.Application.Feature.Tickets.Commands.Register;
 using MediatR;
 
-public class RegisterCommandHandler : IRequestHandler<RegisterCommand, LoginCommandResponseDto>
+namespace Client.Application.Feature.Tickets.Commands.Register
 {
-    private readonly IAuthService _authService;
-
-    public RegisterCommandHandler(IAuthService authService) 
+    public class RegisterCommandHandler : IRequestHandler<RegisterCommand, RegisterCommandResponseDto>
     {
-        _authService = authService;
-    }
+        private readonly IAuthService _authService;
 
-    public async Task<LoginCommandResponseDto> Handle(RegisterCommand request, CancellationToken cancellationToken)
-    {
-        return await _authService.RegisterAsync(request); 
+        public RegisterCommandHandler(IAuthService authService)
+        {
+            _authService = authService;
+        }
+
+        public async Task<RegisterCommandResponseDto> Handle(RegisterCommand request, CancellationToken cancellationToken)
+        {
+            var result = await _authService.RegisterAsync(request);
+
+            return result;
+        }
     }
 }

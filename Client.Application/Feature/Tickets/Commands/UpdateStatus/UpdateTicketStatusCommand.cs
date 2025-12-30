@@ -1,13 +1,6 @@
-﻿using MediatR;
-using Client.Application.Feature.Tickets.Commands.Ticket;
+﻿using Client.Application.Feature.Tickets.Commands.Ticket;
+using MediatR;
+namespace Client.Application.Feature.Tickets.Commands.UpdateStatus;
 
-namespace Client.Application.Feature.Tickets.Commands.UpdateStatus
-{
-    public class UpdateTicketStatusCommand : IRequest<TicketCommandResponseDto>
-    {
-        public Guid TicketId { get; set; }
-        public string NewStatus { get; set; }
-        public string Message { get; set; }
-        public Guid UserId { get; set; }
-    }
-}
+public record UpdateTicketStatusCommand(UpdateTicketStatusCommandDto TicketStatusDto, Guid TicketId)
+    : IRequest<TicketCommandResponseDto>;
