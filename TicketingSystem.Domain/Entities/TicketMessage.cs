@@ -7,7 +7,7 @@
         public Guid AuthorId { get; set; }
         public string Content { get; set; }
         public DateTime CreatedAt { get; set; }
-        public virtual Ticket Ticket { get; set; }
-        public virtual DomainUser Author { get; set; }
+        public Ticket Ticket { get; set; }
+        public User Author { get; set; }
     }
 }

@@ -4,9 +4,9 @@ using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
-using TicketingSystem.Application.Commands;
-using TicketingSystem.Infrastructure.Data;
+using TicketingSystem.Infrastructure.Persistence;
 using TicketingSystem.Infrastructure.Extensions;
+using Client.Application.Feature.Tickets.Commands.Create;
 
 var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;
@@ -20,7 +20,7 @@ builder.Host.UseSerilog();
 
 // DbContext - PostgreSQL
 var connectionString = configuration.GetConnectionString("DefaultConnection");
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
+builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString, npgsqlOptions =>
     {
         npgsqlOptions.MigrationsAssembly("TicketingSystem.Infrastructure");
@@ -103,12 +103,9 @@ app.UseExceptionHandler(errorApp =>
     {
         context.Response.StatusCode = StatusCodes.Status500InternalServerError;
         context.Response.ContentType = "application/json";
-
         var exceptionHandlerPathFeature = context.Features.Get<IExceptionHandlerPathFeature>();
         var exception = exceptionHandlerPathFeature?.Error;
-
         Log.Error(exception, "Unhandled exception occurred");
-
         await context.Response.WriteAsJsonAsync(new
         {
             statusCode = StatusCodes.Status500InternalServerError,
