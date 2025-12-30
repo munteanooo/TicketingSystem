@@ -3,6 +3,7 @@
     public enum UserRole
     {
         TechSupport = 1,
-        Client = 2
+        Client = 2,
+        
     }
 }

@@ -1,16 +1,19 @@
-﻿using TicketingSystem.Domain.Enums;
+﻿using TicketingSystem.Domain.Entities;
+using TicketingSystem.Domain.Enums;
 
-namespace TicketingSystem.Domain.Entities
+public class User
 {
-    public class User
-    {
-        public int Id { get; set; }
-        public string IdentityUserId { get; set; } 
-        public string Name { get; set; }
-        public UserRole Role { get; set; }
-        public string Email { get; set; }
-        public ICollection<Ticket> CreatedTickets { get; set; }
-        public ICollection<Ticket> AssignedTickets { get; set; }
-        public ICollection<TicketMessage> Messages { get; set; } = new List<TicketMessage>();
-    }
+    public Guid Id { get; set; }
+    public Guid? IdentityUserId { get; set; }
+    public string FullName { get; set; }
+    public string Email { get; set; }
+    public string PhoneNumber { get; set; }
+    public UserRole Role { get; set; }
+    public bool IsActive { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
+
+    public ICollection<Ticket> SubmittedTickets { get; set; }
+    public ICollection<Ticket> AssignedTickets { get; set; }
+    public ICollection<TicketMessage> Messages { get; set; }
 }

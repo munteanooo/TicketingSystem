@@ -5,7 +5,7 @@
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
     using TicketingSystem.Infrastructure.Identity;
-    using TicketingSystem.Infrastructure.Data;
+    using TicketingSystem.Infrastructure.Persistence;
 
     public static class ServiceCollectionExtensions
     {
@@ -13,7 +13,7 @@
             this IServiceCollection services,
             IConfiguration configuration)
         {
-            services.AddDbContext<ApplicationDbContext>(options =>
+            services.AddDbContext<AppDbContext>(options =>
                 options.UseNpgsql(
                     configuration.GetConnectionString("DefaultConnection"),
                     b => b.MigrationsAssembly("TicketingSystem.Infrastructure")));
@@ -25,7 +25,7 @@
                 options.Password.RequireUppercase = true;
                 options.User.RequireUniqueEmail = true;
             })
-            .AddEntityFrameworkStores<ApplicationDbContext>()
+            .AddEntityFrameworkStores<AppDbContext>()
             .AddDefaultTokenProviders();
 
             return services;
