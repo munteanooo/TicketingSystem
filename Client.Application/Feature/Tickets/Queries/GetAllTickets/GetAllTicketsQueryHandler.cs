@@ -3,10 +3,9 @@ using Client.Application.Feature.Tickets.Commands.Ticket;
 using MediatR;
 using TicketingSystem.Domain.Entities;
 
-namespace Client.Application.Feature.Tickets.Queries.Handlers
+namespace Client.Application.Feature.Tickets.Queries.GetAllTickets
 {
-    public class GetAllTicketsQueryHandler
-        : IRequestHandler<GetAllTicketsQuery, List<TicketCommandResponseDto>>
+    public class GetAllTicketsQueryHandler : IRequestHandler<GetAllTicketsQuery, List<TicketCommandResponseDto>>
     {
         private readonly ITicketRepository _ticketRepository;
 
@@ -15,15 +14,20 @@ namespace Client.Application.Feature.Tickets.Queries.Handlers
             _ticketRepository = ticketRepository;
         }
 
-        public async Task<List<TicketCommandResponseDto>> Handle(
-            GetAllTicketsQuery request,
-            CancellationToken cancellationToken)
+        public async Task<List<TicketCommandResponseDto>> Handle(GetAllTicketsQuery request, CancellationToken cancellationToken)
         {
-            // Preia toate tichetele cu detalii (Client și Agent)
-            var tickets = await _ticketRepository
-                .GetAllWithDetailsAsync(cancellationToken);
+            var tickets = await _ticketRepository.GetAllWithDetailsAsync(cancellationToken);
 
-            // Transformă în DTO
+            // Aici poți aplica filtrele din request.Filters dacă nu e null
+            if (request.Filters != null)
+            {
+                if (!string.IsNullOrEmpty(request.Filters.Status))
+                    tickets = tickets.Where(t => t.Status.ToString() == request.Filters.Status).ToList();
+
+                if (!string.IsNullOrEmpty(request.Filters.Priority))
+                    tickets = tickets.Where(t => t.Priority.ToString() == request.Filters.Priority).ToList();
+            }
+
             return tickets.Select(MapToDto).ToList();
         }
 

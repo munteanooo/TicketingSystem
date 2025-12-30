@@ -3,9 +3,10 @@ using Client.Application.Feature.Tickets.Commands.Ticket;
 using MediatR;
 using TicketingSystem.Domain.Entities;
 
-namespace Client.Application.Feature.Tickets.Queries.Handlers
+namespace Client.Application.Feature.Tickets.Queries.GetTicketById
 {
-    public class GetTicketByIdQueryHandler : IRequestHandler<GetTicketByIdQuery, TicketCommandResponseDto>
+    public class GetTicketByIdQueryHandler
+        : IRequestHandler<GetTicketByIdQuery, GetTicketByIdQueryResponseDto>
     {
         private readonly ITicketRepository _ticketRepository;
 
@@ -14,10 +15,11 @@ namespace Client.Application.Feature.Tickets.Queries.Handlers
             _ticketRepository = ticketRepository;
         }
 
-        public async Task<TicketCommandResponseDto> Handle(GetTicketByIdQuery request, CancellationToken cancellationToken)
+        public async Task<GetTicketByIdQueryResponseDto> Handle(
+            GetTicketByIdQuery request,
+            CancellationToken cancellationToken)
         {
-            // Preia ticket-ul cu toate detaliile (Client, Agent, Messages)
-            var ticket = await _ticketRepository.GetByIdWithDetailsAsync(request.TicketId, cancellationToken);
+            var ticket = await _ticketRepository.GetByIdWithDetailsAsync(request.Filters.TicketId, cancellationToken);
 
             if (ticket == null)
                 throw new Exception("Ticket not found");
@@ -25,9 +27,9 @@ namespace Client.Application.Feature.Tickets.Queries.Handlers
             return MapToDto(ticket);
         }
 
-        private static TicketCommandResponseDto MapToDto(Ticket ticket)
+        private static GetTicketByIdQueryResponseDto MapToDto(Ticket ticket)
         {
-            return new TicketCommandResponseDto
+            return new GetTicketByIdQueryResponseDto
             {
                 Id = ticket.Id,
                 TicketNumber = ticket.TicketNumber,
@@ -43,7 +45,7 @@ namespace Client.Application.Feature.Tickets.Queries.Handlers
                 AssignedToAgentName = ticket.AssignedToAgent?.FullName,
                 CreatedAt = ticket.CreatedAt,
                 UpdatedAt = ticket.UpdatedAt ?? DateTime.MinValue,
-                ResolvedAt = ticket.ResolvedAt, 
+                ResolvedAt = ticket.ResolvedAt,
                 Messages = ticket.Messages?.Select(m => new TicketMessageDto
                 {
                     Id = m.Id,

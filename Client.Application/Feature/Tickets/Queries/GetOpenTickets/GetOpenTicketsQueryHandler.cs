@@ -1,12 +1,12 @@
 ﻿using Client.Application.Contracts.Persistence;
-using Client.Application.Feature.Tickets.Commands.Ticket;
 using MediatR;
 using TicketingSystem.Domain.Entities;
 using TicketingSystem.Domain.Enums;
 
-namespace Client.Application.Feature.Tickets.Queries.Handlers
+namespace Client.Application.Feature.Tickets.Queries.GetOpenTickets
 {
-    public class GetOpenTicketsQueryHandler : IRequestHandler<GetOpenTicketsQuery, List<TicketCommandResponseDto>>
+    public class GetOpenTicketsQueryHandler
+        : IRequestHandler<GetOpenTicketsQuery, List<GetOpenTicketsQueryResponseDto>>
     {
         private readonly ITicketRepository _ticketRepository;
 
@@ -15,19 +15,23 @@ namespace Client.Application.Feature.Tickets.Queries.Handlers
             _ticketRepository = ticketRepository;
         }
 
-        public async Task<List<TicketCommandResponseDto>> Handle(GetOpenTicketsQuery request, CancellationToken cancellationToken)
+        public async Task<List<GetOpenTicketsQueryResponseDto>> Handle(
+            GetOpenTicketsQuery request,
+            CancellationToken cancellationToken)
         {
-            // Folosim repository-ul pentru a obține toate tichetele cu status Open sau Reopened
             var tickets = (await _ticketRepository.GetAllAsync())
                 .Where(t => t.Status == TicketStatus.Open || t.Status == TicketStatus.Reopened)
                 .ToList();
 
+            if (!string.IsNullOrEmpty(request.Filters.Priority))
+                tickets = tickets.Where(t => t.Priority.ToString() == request.Filters.Priority).ToList();
+
             return tickets.Select(MapToDto).ToList();
         }
 
-        private static TicketCommandResponseDto MapToDto(Ticket ticket)
+        private static GetOpenTicketsQueryResponseDto MapToDto(Ticket ticket)
         {
-            return new TicketCommandResponseDto
+            return new GetOpenTicketsQueryResponseDto
             {
                 Id = ticket.Id,
                 TicketNumber = ticket.TicketNumber,
