@@ -1,0 +1,219 @@
+﻿@page "/auth/register"
+@inject IAuthService AuthService
+@inject NavigationManager Nav
+@using ClientWeb.Models
+@using ClientWeb.Services.Interfaces
+
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-header">
+            <h2>📝 Înregistrare</h2>
+            <p>Creează-ți un cont nou</p>
+        </div>
+
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <strong>Eroare!</strong> @errorMessage
+                <button type="button" class="btn-close" @onclick="() => errorMessage = string.Empty"></button>
+            </div>
+        }
+
+        @if (!string.IsNullOrEmpty(successMessage))
+        {
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <strong>Succes!</strong> @successMessage
+                <a href="/auth/login" class="alert-link ms-2">Mergi la login</a>
+            </div>
+        }
+
+        <form @onsubmit="HandleRegister">
+            <div class="mb-3">
+                <label for="firstName" class="form-label">Prenume</label>
+                <input type="text" class="form-control" id="firstName" @bind="firstName"
+                       placeholder="Ion" required disabled="@isLoading" />
+            </div>
+
+            <div class="mb-3">
+                <label for="lastName" class="form-label">Nume</label>
+                <input type="text" class="form-control" id="lastName" @bind="lastName"
+                       placeholder="Popescu" required disabled="@isLoading" />
+            </div>
+
+            <div class="mb-3">
+                <label for="email" class="form-label">Email</label>
+                <input type="email" class="form-control" id="email" @bind="email"
+                       placeholder="exemplu@email.com" required disabled="@isLoading" />
+            </div>
+
+            <div class="mb-3">
+                <label for="password" class="form-label">Parolă</label>
+                <input type="password" class="form-control" id="password" @bind="password"
+                       placeholder="••••••••" required disabled="@isLoading" />
+            </div>
+
+            <div class="mb-3">
+                <label for="confirmPassword" class="form-label">Confirmă Parolă</label>
+                <input type="password" class="form-control" id="confirmPassword" @bind="confirmPassword"
+                       placeholder="••••••••" required disabled="@isLoading" />
+            </div>
+
+            <button type="submit" class="btn btn-success w-100 py-2" disabled="@isLoading">
+                @if (isLoading)
+                {
+                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                    <span>Se procesează...</span>
+                }
+                else
+                {
+                    <span>Înregistrare</span>
+                }
+            </button>
+        </form>
+
+        <div class="auth-footer">
+            <p>Ai deja cont? <a href="/auth/login">Conectează-te</a></p>
+        </div>
+    </div>
+</div>
+
+<style>
+    .auth-container {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 20px;
+    }
+
+    .auth-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        width: 100%;
+        max-width: 420px;
+        padding: 40px;
+    }
+
+    .auth-header {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+
+        .auth-header h2 {
+            font-size: 28px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .auth-header p {
+            color: #999;
+            font-size: 14px;
+        }
+
+    .form-label {
+        font-weight: 500;
+        color: #333;
+        margin-bottom: 8px;
+    }
+
+    .form-control {
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 10px 14px;
+        font-size: 14px;
+        transition: all 0.3s;
+    }
+
+        .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+
+    .btn-success {
+        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        border: none;
+        font-weight: 600;
+        transition: transform 0.2s;
+    }
+
+        .btn-success:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(17, 153, 142, 0.4);
+        }
+
+        .btn-success:disabled {
+            opacity: 0.8;
+        }
+
+    .auth-footer {
+        text-align: center;
+        margin-top: 20px;
+        font-size: 14px;
+        color: #666;
+    }
+
+        .auth-footer a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+            .auth-footer a:hover {
+                text-decoration: underline;
+            }
+</style>
+
+@code {
+    private string firstName = "";
+    private string lastName = "";
+    private string email = "";
+    private string password = "";
+    private string confirmPassword = "";
+    private string errorMessage = "";
+    private string successMessage = "";
+    private bool isLoading = false;
+
+    private async Task HandleRegister()
+    {
+        if (string.IsNullOrEmpty(firstName) || string.IsNullOrEmpty(lastName) ||
+            string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password) ||
+            string.IsNullOrEmpty(confirmPassword))
+        {
+            errorMessage = "Completează toate câmpurile";
+            return;
+        }
+
+        if (password != confirmPassword)
+        {
+            errorMessage = "Parolele nu se potrivesc";
+            return;
+        }
+
+        if (password.Length < 6)
+        {
+            errorMessage = "Parola trebuie să aibă cel puțin 6 caractere";
+            return;
+        }
+
+        isLoading = true;
+        errorMessage = "";
+        successMessage = "";
+
+        var success = await AuthService.RegisterAsync(email, password, firstName, lastName);
+
+        if (success)
+        {
+            successMessage = "Înregistrare reușită! Poți să te conectezi acum.";
+            firstName = lastName = email = password = confirmPassword = "";
+        }
+        else
+        {
+            errorMessage = "Înregistrare eșuată. Încearcă din nou.";
+        }
+
+        isLoading = false;
+    }
+}
