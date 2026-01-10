@@ -1,8 +1,10 @@
 ﻿@page "/auth/register"
-@inject IAuthService AuthService
-@inject NavigationManager Nav
 @using ClientWeb.Models
 @using ClientWeb.Services.Interfaces
+@using Microsoft.AspNetCore.Components.Web
+@inject IAuthService AuthService
+@inject NavigationManager Nav
+@rendermode @(new InteractiveServerRenderMode())
 
 <div class="auth-container">
     <div class="auth-card">
@@ -13,55 +15,64 @@
 
         @if (!string.IsNullOrEmpty(errorMessage))
         {
-            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                <strong>Eroare!</strong> @errorMessage
-                <button type="button" class="btn-close" @onclick="() => errorMessage = string.Empty"></button>
-            </div>
+            <div class="alert alert-danger">@errorMessage</div>
         }
 
         @if (!string.IsNullOrEmpty(successMessage))
         {
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                <strong>Succes!</strong> @successMessage
-                <a href="/auth/login" class="alert-link ms-2">Mergi la login</a>
-            </div>
+            <div class="alert alert-success">@successMessage</div>
         }
 
-        <form @onsubmit="HandleRegister">
+        <EditForm Model="@registerModel"
+                  OnValidSubmit="HandleRegister"
+                  FormName="RegisterForm">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
             <div class="mb-3">
-                <label for="firstName" class="form-label">Prenume</label>
-                <input type="text" class="form-control" id="firstName" @bind="firstName"
-                       placeholder="Ion" required disabled="@isLoading" />
+                <label>Prenume</label>
+                <InputText class="form-control"
+                           @bind-Value="registerModel.FirstName"
+                           placeholder="Ion" />
             </div>
 
             <div class="mb-3">
-                <label for="lastName" class="form-label">Nume</label>
-                <input type="text" class="form-control" id="lastName" @bind="lastName"
-                       placeholder="Popescu" required disabled="@isLoading" />
+                <label>Nume</label>
+                <InputText class="form-control"
+                           @bind-Value="registerModel.LastName"
+                           placeholder="Popescu" />
             </div>
 
             <div class="mb-3">
-                <label for="email" class="form-label">Email</label>
-                <input type="email" class="form-control" id="email" @bind="email"
-                       placeholder="exemplu@email.com" required disabled="@isLoading" />
+                <label>Email</label>
+                <InputText type="email"
+                           class="form-control"
+                           @bind-Value="registerModel.Email"
+                           placeholder="exemplu@email.com" />
             </div>
 
             <div class="mb-3">
-                <label for="password" class="form-label">Parolă</label>
-                <input type="password" class="form-control" id="password" @bind="password"
-                       placeholder="••••••••" required disabled="@isLoading" />
+                <label>Parolă</label>
+                <InputText type="password"
+                           class="form-control"
+                           @bind-Value="registerModel.Password"
+                           placeholder="••••••••" />
             </div>
 
             <div class="mb-3">
-                <label for="confirmPassword" class="form-label">Confirmă Parolă</label>
-                <input type="password" class="form-control" id="confirmPassword" @bind="confirmPassword"
-                       placeholder="••••••••" required disabled="@isLoading" />
+                <label>Confirmă Parolă</label>
+                <InputText type="password"
+                           class="form-control"
+                           @bind-Value="registerModel.ConfirmPassword"
+                           placeholder="••••••••" />
             </div>
 
-            <button type="submit" class="btn btn-success w-100 py-2" disabled="@isLoading">
+            <button type="submit"
+                    class="btn btn-success w-100"
+                    disabled="@isLoading">
                 @if (isLoading)
                 {
-                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                    <span class="spinner-border spinner-border-sm me-2"></span>
                     <span>Se procesează...</span>
                 }
                 else
@@ -69,7 +80,7 @@
                     <span>Înregistrare</span>
                 }
             </button>
-        </form>
+        </EditForm>
 
         <div class="auth-footer">
             <p>Ai deja cont? <a href="/auth/login">Conectează-te</a></p>
@@ -77,143 +88,66 @@
     </div>
 </div>
 
-<style>
-    .auth-container {
-        min-height: 100vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 20px;
-    }
-
-    .auth-card {
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-        width: 100%;
-        max-width: 420px;
-        padding: 40px;
-    }
-
-    .auth-header {
-        text-align: center;
-        margin-bottom: 30px;
-    }
-
-        .auth-header h2 {
-            font-size: 28px;
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 8px;
-        }
-
-        .auth-header p {
-            color: #999;
-            font-size: 14px;
-        }
-
-    .form-label {
-        font-weight: 500;
-        color: #333;
-        margin-bottom: 8px;
-    }
-
-    .form-control {
-        border: 1px solid #ddd;
-        border-radius: 8px;
-        padding: 10px 14px;
-        font-size: 14px;
-        transition: all 0.3s;
-    }
-
-        .form-control:focus {
-            border-color: #667eea;
-            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
-        }
-
-    .btn-success {
-        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-        border: none;
-        font-weight: 600;
-        transition: transform 0.2s;
-    }
-
-        .btn-success:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(17, 153, 142, 0.4);
-        }
-
-        .btn-success:disabled {
-            opacity: 0.8;
-        }
-
-    .auth-footer {
-        text-align: center;
-        margin-top: 20px;
-        font-size: 14px;
-        color: #666;
-    }
-
-        .auth-footer a {
-            color: #667eea;
-            text-decoration: none;
-            font-weight: 600;
-        }
-
-            .auth-footer a:hover {
-                text-decoration: underline;
-            }
-</style>
-
 @code {
-    private string firstName = "";
-    private string lastName = "";
-    private string email = "";
-    private string password = "";
-    private string confirmPassword = "";
+    private RegisterRequest registerModel = new();
     private string errorMessage = "";
     private string successMessage = "";
     private bool isLoading = false;
 
     private async Task HandleRegister()
     {
-        if (string.IsNullOrEmpty(firstName) || string.IsNullOrEmpty(lastName) ||
-            string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password) ||
-            string.IsNullOrEmpty(confirmPassword))
-        {
-            errorMessage = "Completează toate câmpurile";
-            return;
-        }
-
-        if (password != confirmPassword)
-        {
-            errorMessage = "Parolele nu se potrivesc";
-            return;
-        }
-
-        if (password.Length < 6)
-        {
-            errorMessage = "Parola trebuie să aibă cel puțin 6 caractere";
-            return;
-        }
+        Console.WriteLine("HandleRegister CALLED"); // temporar
 
         isLoading = true;
         errorMessage = "";
         successMessage = "";
 
-        var success = await AuthService.RegisterAsync(email, password, firstName, lastName);
-
-        if (success)
+        if (string.IsNullOrEmpty(registerModel.FirstName) ||
+            string.IsNullOrEmpty(registerModel.LastName) ||
+            string.IsNullOrEmpty(registerModel.Email) ||
+            string.IsNullOrEmpty(registerModel.Password) ||
+            string.IsNullOrEmpty(registerModel.ConfirmPassword))
         {
-            successMessage = "Înregistrare reușită! Poți să te conectezi acum.";
-            firstName = lastName = email = password = confirmPassword = "";
-        }
-        else
-        {
-            errorMessage = "Înregistrare eșuată. Încearcă din nou.";
+            errorMessage = "Completează toate câmpurile";
+            isLoading = false;
+            return;
         }
 
-        isLoading = false;
+        if (registerModel.Password != registerModel.ConfirmPassword)
+        {
+            errorMessage = "Parolele nu se potrivesc";
+            isLoading = false;
+            return;
+        }
+
+        if (registerModel.Password.Length < 6)
+        {
+            errorMessage = "Parola trebuie să aibă cel puțin 6 caractere";
+            isLoading = false;
+            return;
+        }
+
+        try
+        {
+            var success = await AuthService.RegisterAsync(registerModel);
+
+            if (success)
+            {
+                successMessage = "Înregistrare reușită! Poți să te conectezi acum.";
+                registerModel = new RegisterRequest();
+            }
+            else
+            {
+                errorMessage = "Înregistrare eșuată. Încearcă din nou.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"A apărut o eroare: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
     }
 }

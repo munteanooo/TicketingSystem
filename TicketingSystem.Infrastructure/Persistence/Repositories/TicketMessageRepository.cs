@@ -1,4 +1,4 @@
-﻿using Client.Application.Contracts.Persistence;
+﻿using Client.Application.Contracts.Messaging;
 using Microsoft.EntityFrameworkCore;
 using TicketingSystem.Domain.Entities;
 

@@ -13,6 +13,6 @@
         public Guid? AssignedToAgentId { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
-        public DateTime? ResolvedAt { get; set; }
+        public DateTime ResolvedAt { get; set; }
     }
 }

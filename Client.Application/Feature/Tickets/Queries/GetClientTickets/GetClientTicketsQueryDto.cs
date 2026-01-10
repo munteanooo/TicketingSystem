@@ -1,13 +1,10 @@
-﻿namespace Client.Application.Feature.Tickets.Queries.GetClientTickets
-{
-    public class GetClientTicketsQueryDto
-    {
-        public Guid ClientId { get; set; }
+﻿using TicketingSystem.Domain.Enums;
 
-        // Opțional: filtre suplimentare, paginare etc.
-        public string? Status { get; set; }        // "Open", "Resolved", etc.
-        public string? Priority { get; set; }      // "Low", "Medium", "High"
-        public int? Page { get; set; }
-        public int? PageSize { get; set; }
-    }
+public class GetClientTicketsQueryDto
+{
+    public Guid ClientId { get; set; }
+    public TicketStatus? Status { get; set; }
+    public TicketPriority? Priority { get; set; }
+    public int? Page { get; set; }
+    public int? PageSize { get; set; }
 }

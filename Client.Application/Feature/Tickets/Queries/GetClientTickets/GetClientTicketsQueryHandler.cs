@@ -1,6 +1,7 @@
 ﻿using Client.Application.Contracts.Persistence;
 using Client.Application.Feature.Tickets.Queries.GetClientTickets;
 using MediatR;
+using TicketingSystem.Domain.Entities;
 
 public class GetClientTicketsQueryHandler
     : IRequestHandler<GetClientTicketsQuery, List<GetClientTicketsQueryResponseDto>>
@@ -16,26 +17,31 @@ public class GetClientTicketsQueryHandler
         GetClientTicketsQuery request,
         CancellationToken cancellationToken)
     {
-        var tickets = await _ticketRepository.GetByUserAsync(request.Filters.ClientId);
+        var tickets = await _ticketRepository.GetByUserAsync(request.ClientId);
 
-        if (!string.IsNullOrEmpty(request.Filters.Status))
-            tickets = tickets.Where(t => t.Status.ToString() == request.Filters.Status).ToList();
-
-        if (!string.IsNullOrEmpty(request.Filters.Priority))
-            tickets = tickets.Where(t => t.Priority.ToString() == request.Filters.Priority).ToList();
-
-        if (request.Filters.Page.HasValue && request.Filters.PageSize.HasValue)
+        if (request.Status.HasValue)
         {
             tickets = tickets
-                .Skip((request.Filters.Page.Value - 1) * request.Filters.PageSize.Value)
-                .Take(request.Filters.PageSize.Value)
+                .Where(t => t.Status == request.Status.Value)
                 .ToList();
         }
+
+        if (request.Priority.HasValue)
+        {
+            tickets = tickets
+                .Where(t => t.Priority == request.Priority.Value)
+                .ToList();
+        }
+
+        tickets = tickets
+            .Skip((request.Page - 1) * request.PageSize)
+            .Take(request.PageSize)
+            .ToList();
 
         return tickets.Select(MapToDto).ToList();
     }
 
-    private static GetClientTicketsQueryResponseDto MapToDto(TicketingSystem.Domain.Entities.Ticket ticket)
+    private static GetClientTicketsQueryResponseDto MapToDto(Ticket ticket)
     {
         return new GetClientTicketsQueryResponseDto
         {
@@ -51,7 +57,7 @@ public class GetClientTicketsQueryHandler
             AssignedToAgentId = ticket.AssignedToAgentId,
             AssignedToAgentName = ticket.AssignedToAgent?.FullName,
             CreatedAt = ticket.CreatedAt,
-            UpdatedAt = ticket.UpdatedAt ?? DateTime.MinValue
+            UpdatedAt = ticket.UpdatedAt ?? ticket.CreatedAt
         };
     }
 }

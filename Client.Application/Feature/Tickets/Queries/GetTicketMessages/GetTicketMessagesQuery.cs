@@ -1,14 +1,16 @@
-﻿using MediatR;
+﻿using Client.Application.Feature.Tickets.Queries.GetTicketMessages;
+using MediatR;
 
-namespace Client.Application.Feature.Tickets.Queries.GetTicketMessages
+public class GetTicketMessagesQuery : IRequest<GetTicketMessagesQueryResponseDto>
 {
-    public class GetTicketMessagesQuery : IRequest<GetTicketMessagesQueryResponseDto>
-    {
-        public GetTicketMessagesQueryDto Filters { get; set; }
+    public Guid TicketId { get; set; }
+    public Guid UserId { get; set; } 
+    public bool IsTechSupport { get; set; } 
 
-        public GetTicketMessagesQuery(GetTicketMessagesQueryDto filters)
-        {
-            Filters = filters;
-        }
+    public GetTicketMessagesQuery(Guid ticketId, Guid userId, bool isTechSupport)
+    {
+        TicketId = ticketId;
+        UserId = userId;
+        IsTechSupport = isTechSupport;
     }
 }

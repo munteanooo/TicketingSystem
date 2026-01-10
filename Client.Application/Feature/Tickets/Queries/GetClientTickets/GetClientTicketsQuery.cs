@@ -1,14 +1,15 @@
-﻿using MediatR;
+﻿using Client.Application.Feature.Tickets.Queries.GetClientTickets;
+using MediatR;
+using TicketingSystem.Domain.Enums;
 
-namespace Client.Application.Feature.Tickets.Queries.GetClientTickets
+public class GetClientTicketsQuery
+    : IRequest<List<GetClientTicketsQueryResponseDto>>
 {
-    public class GetClientTicketsQuery : IRequest<List<GetClientTicketsQueryResponseDto>>
-    {
-        public GetClientTicketsQueryDto Filters { get; set; }
+    public Guid ClientId { get; set; }
 
-        public GetClientTicketsQuery(GetClientTicketsQueryDto filters)
-        {
-            Filters = filters;
-        }
-    }
+    public TicketStatus? Status { get; set; }
+    public TicketPriority? Priority { get; set; }
+
+    public int Page { get; set; } = 1;
+    public int PageSize { get; set; } = 10;
 }

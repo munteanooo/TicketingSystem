@@ -1,14 +1,16 @@
-﻿using Client.Application.Feature.Tickets.Commands.Login;
-using Client.Application.Feature.Tickets.Commands.Register;
+﻿using Client.Application.Contracts.DTOs;
+using Client.Application.Feature.Auth.Login;
 
 namespace Client.Application.Contracts.Services
 {
     public interface IAuthService
     {
-        Task<RegisterCommandResponseDto> RegisterAsync(RegisterCommand command);
-        Task<LoginCommandResponseDto> LoginAsync(LoginCommand command);
-        Task<LoginCommandResponseDto> RefreshTokenAsync(Guid userId);
+        Task<RegisterCommandResponseDto> RegisterAsync(RegisterCommandDto registerDto);
+        Task<LoginCommandResponseDto> LoginAsync(LoginCommandDto loginDto);
+        Task<LoginCommandResponseDto> RefreshTokenAsync(string refreshToken);
         Task LogoutAsync(Guid userId);
-        Task<LoginCommandDto?> GetUserByIdAsync(Guid userId);
+        Task<UserDto?> GetUserByIdAsync(Guid userId);
+        Task<UserDto?> GetUserByEmailAsync(string email);
+        Task<bool> ValidateCredentialsAsync(string email, string password);
     }
 }

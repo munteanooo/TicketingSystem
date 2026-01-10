@@ -1,74 +1,86 @@
 ﻿using Client.Application.Feature.Tickets.Commands.AddMessage;
 using Client.Application.Feature.Tickets.Commands.Create;
-using Client.Application.Feature.Tickets.Commands.UpdateStatus;
-using Client.Application.Feature.Tickets.Queries;
-using Client.Application.Feature.Tickets.Commands;
+using Client.Application.Feature.Tickets.Queries.GetClientTicketById;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Client.Application.Feature.Tickets.Commands.Delete;
+using TicketingSystem.Infrastructure.Extensions;
 
-[ApiController]
-[Route("api/[controller]")]
-public class TicketsController : ControllerBase
+namespace ClientApi.Controllers
 {
-    private readonly IMediator _mediator;
-
-    public TicketsController(IMediator mediator)
+    [ApiController]
+    [Route("api/tickets")]
+    [Authorize]
+    public class TicketsController : ControllerBase
     {
-        _mediator = mediator;
-    }
+        private readonly IMediator _mediator;
 
-    // GET: api/tickets
-    [HttpGet]
-    public async Task<IActionResult> GetAllTickets()
-    {
-        var tickets = await _mediator.Send(new GetAllTicketsQuery());
-        return Ok(tickets);
-    }
+        public TicketsController(IMediator mediator)
+        {
+            _mediator = mediator;
+        }
 
-    // GET: api/tickets/{id}
-    [HttpGet("{id:guid}")]
-    public async Task<IActionResult> GetTicketById(Guid id)
-    {
-        var ticket = await _mediator.Send(new GetTicketByIdQuery { TicketId = id });
-        if (ticket == null) return NotFound();
-        return Ok(ticket);
-    }
+        // GET /api/tickets/my
+        [HttpGet("my")]
+        public async Task<IActionResult> GetMyTickets([FromQuery] GetClientTicketsQueryDto dto)
+        {
+            var query = new GetClientTicketsQuery
+            {
+                ClientId = User.GetUserId(),
+                Status = dto.Status,
+                Priority = dto.Priority,
+                Page = dto.Page ?? 1,
+                PageSize = dto.PageSize ?? 10
+            };
 
-    // POST: api/tickets
-    [HttpPost]
-    public async Task<IActionResult> CreateTicket(CreateTicketCommand command)
-    {
-        var ticket = await _mediator.Send(command);
-        return Ok(ticket);
-    }
+            var result = await _mediator.Send(query);
+            return Ok(result);
+        }
 
-    // PUT: api/tickets/{id}/status
-    [HttpPut("{id:guid}/status")]
-    public async Task<IActionResult> UpdateTicketStatus(Guid id, UpdateTicketStatusCommand command)
-    {
-        command.TicketId = id;
-        var updatedTicket = await _mediator.Send(command);
-        if (updatedTicket == null) return NotFound();
-        return Ok(updatedTicket);
-    }
+        // POST /api/tickets
+        [HttpPost]
+        public async Task<IActionResult> CreateTicket([FromBody] CreateTicketCommand command)
+        {
+            command = command with { ClientId = User.GetUserId() };
 
-    // DELETE: api/tickets/{id}
-    [HttpDelete("{id:guid}")]
-    public async Task<IActionResult> DeleteTicket(Guid id)
-    {
-        var result = await _mediator.Send(new DeleteTicketCommand(id));
-        if (!result) return NotFound();
-        return NoContent();
-    }
+            var ticket = await _mediator.Send(command);
 
-    // POST: api/tickets/{id}/messages
-    [HttpPost("{id:guid}/messages")]
-    public async Task<IActionResult> AddMessageToTicket(Guid id, AddMessageToTicketCommand command)
-    {
-        command = command with { TicketId = id };
-        var message = await _mediator.Send(command);
-        if (message == null) return NotFound();
-        return Ok(message);
+            return CreatedAtAction(
+                nameof(GetClientTicketByIdQuery),
+                new { id = ticket.Id },
+                ticket
+            );
+        }
+
+        // POST /api/tickets/{id}/messages
+        [HttpPost("{id:guid}/messages")]
+        public async Task<IActionResult> AddMessageToTicket(
+            Guid id,
+            [FromBody] AddMessageToTicketCommand command)
+        {
+            command = command with
+            {
+                TicketId = id,
+                AuthorId = User.GetUserId()
+            };
+
+            var message = await _mediator.Send(command);
+            return Ok(message);
+        }
     }
 }
+
+
+// GET /api/tickets/{id} pentru TechSupport
+//[HttpGet("{id:guid}")]
+//public async Task<IActionResult> GetTicketById(Guid id)
+//{
+//    var query = new GetClientTicketByIdQuery(new GetClientTicketByIdQueryDto
+//    {
+//        TicketId = id,
+//        ClientId = User.GetUserId()
+//    });
+
+//    var result = await _mediator.Send(query);
+//    return Ok(result);
+//}

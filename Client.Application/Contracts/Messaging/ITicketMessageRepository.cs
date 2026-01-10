@@ -1,6 +1,6 @@
 ﻿using TicketingSystem.Domain.Entities;
 
-namespace Client.Application.Contracts.Persistence
+namespace Client.Application.Contracts.Messaging
 {
     public interface ITicketMessageRepository
     {

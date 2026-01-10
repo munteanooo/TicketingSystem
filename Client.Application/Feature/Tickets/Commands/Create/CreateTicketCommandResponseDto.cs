@@ -1,4 +1,4 @@
-﻿namespace Client.Application.DTOs
+﻿namespace Client.Application.Feature.Tickets.Commands.Create
 {
     public class CreateTicketCommandResponseDto
     {

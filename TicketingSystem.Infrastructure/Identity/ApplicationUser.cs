@@ -1,13 +1,14 @@
 ﻿using Microsoft.AspNetCore.Identity;
-using System;
+using TicketingSystem.Domain.Enums;
 
 namespace TicketingSystem.Infrastructure.Identity
 {
     public class ApplicationUser : IdentityUser<Guid>
     {
         public string FullName { get; set; } = string.Empty;
-        public string Role { get; set; } = "User";
+        public UserRole Role { get; set; } = UserRole.Client; 
         public bool IsActive { get; set; } = true;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime? UpdatedAt { get; set; }
     }
 }

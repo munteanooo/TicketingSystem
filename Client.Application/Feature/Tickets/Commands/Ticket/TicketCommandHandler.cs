@@ -41,7 +41,7 @@ public class UpdateTicketCommandHandler : IRequestHandler<UpdateTicketCommand, T
             AssignedToAgentId = ticket.AssignedToAgentId,
             CreatedAt = ticket.CreatedAt,
             UpdatedAt = ticket.UpdatedAt ?? DateTime.MinValue,
-            ResolvedAt = ticket.ResolvedAt
+            ResolvedAt = ticket.ResolvedAt ?? DateTime.MinValue,
         };
     }
 }

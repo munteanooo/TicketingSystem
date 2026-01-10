@@ -1,9 +1,6 @@
-﻿using System.IdentityModel.Tokens.Jwt;
-using System.Net.Http.Headers;
-using System.Net.Http.Json;
+﻿using System.Net.Http.Headers;
 using System.Text.Json;
 using Blazored.LocalStorage;
-using ClientWeb.Models;
 using ClientWeb.Services.Interfaces;
 
 namespace ClientWeb.Services
@@ -27,19 +24,7 @@ namespace ClientWeb.Services
         public async Task<bool> IsAuthenticatedAsync()
         {
             var token = await GetTokenAsync();
-            if (string.IsNullOrEmpty(token))
-                return false;
-
-            try
-            {
-                var handler = new JwtSecurityTokenHandler();
-                var jwtToken = handler.ReadToken(token) as JwtSecurityToken;
-                return jwtToken?.ValidTo > DateTime.UtcNow;
-            }
-            catch
-            {
-                return false;
-            }
+            return !string.IsNullOrEmpty(token);
         }
 
         public async Task<string?> GetTokenAsync()
@@ -57,11 +42,17 @@ namespace ClientWeb.Services
             return await _localStorage.GetItemAsStringAsync("user_email");
         }
 
-        public async Task SetAuthDataAsync(string token, int userId, string email)
+        public async Task<string?> GetUserFullNameAsync()
+        {
+            return await _localStorage.GetItemAsStringAsync("user_fullname");
+        }
+
+        public async Task SetAuthDataAsync(string token, Guid userId, string email, string fullName)
         {
             await _localStorage.SetItemAsync("jwt_token", token);
             await _localStorage.SetItemAsync("user_id", userId.ToString());
             await _localStorage.SetItemAsync("user_email", email);
+            await _localStorage.SetItemAsync("user_fullname", fullName);
             await SetAuthorizationHeaderAsync();
         }
 
@@ -70,6 +61,7 @@ namespace ClientWeb.Services
             await _localStorage.RemoveItemAsync("jwt_token");
             await _localStorage.RemoveItemAsync("user_id");
             await _localStorage.RemoveItemAsync("user_email");
+            await _localStorage.RemoveItemAsync("user_fullname");
             _httpClient.DefaultRequestHeaders.Authorization = null;
         }
 
@@ -87,17 +79,31 @@ namespace ClientWeb.Services
         {
             try
             {
-                var request = new LoginRequest { Email = email, Password = password };
+                var request = new { Email = email, Password = password };
                 var response = await _httpClient.PostAsJsonAsync($"{API_BASE_URL}/login", request);
 
                 if (response.IsSuccessStatusCode)
                 {
                     var json = await response.Content.ReadAsStringAsync();
-                    var loginResponse = JsonSerializer.Deserialize<LoginResponse>(json, _jsonOptions);
+                    using var doc = JsonDocument.Parse(json);
 
-                    if (loginResponse?.Success == true && loginResponse.User != null)
+                    var success = doc.RootElement.GetProperty("success").GetBoolean();
+                    if (success)
                     {
-                        await SetAuthDataAsync(loginResponse.Token, loginResponse.User.Id, loginResponse.User.Email);
+                        var token = doc.RootElement.GetProperty("token").GetString();
+                        var user = doc.RootElement.GetProperty("user");
+
+                        // Parsează userId ca Guid
+                        var userIdString = user.GetProperty("id").GetString();
+                        if (!Guid.TryParse(userIdString, out var userId))
+                        {
+                            return false;
+                        }
+
+                        var userEmail = user.GetProperty("email").GetString();
+                        var fullName = user.GetProperty("fullName").GetString();
+
+                        await SetAuthDataAsync(token, userId, userEmail, fullName);
                         return true;
                     }
                 }
@@ -111,25 +117,19 @@ namespace ClientWeb.Services
             }
         }
 
-        public async Task<bool> RegisterAsync(string email, string password, string firstName, string lastName)
+        public async Task<bool> RegisterAsync(RegisterRequest request)
         {
             try
             {
-                var request = new RegisterRequest
-                {
-                    Email = email,
-                    Password = password,
-                    FirstName = firstName,
-                    LastName = lastName
-                };
-
-                var response = await _httpClient.PostAsJsonAsync($"{API_BASE_URL}/register", request);
+                // Trimite RegisterRequest direct la API
+                var response = await _httpClient.PostAsJsonAsync("/api/auth/register", request);
 
                 if (response.IsSuccessStatusCode)
                 {
+                    // Backend-ul returnează success: true/false
                     var json = await response.Content.ReadAsStringAsync();
-                    var registerResponse = JsonSerializer.Deserialize<RegisterResponse>(json, _jsonOptions);
-                    return registerResponse?.Success ?? false;
+                    using var doc = JsonDocument.Parse(json);
+                    return doc.RootElement.GetProperty("success").GetBoolean();
                 }
 
                 return false;

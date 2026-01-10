@@ -1,4 +1,6 @@
-﻿namespace ClientWeb.Services.Interfaces
+﻿using ClientWeb.Models;
+
+namespace ClientWeb.Services.Interfaces
 {
     public interface IAuthService
     {
@@ -6,10 +8,11 @@
         Task<string?> GetTokenAsync();
         Task<string?> GetUserIdAsync();
         Task<string?> GetUserEmailAsync();
-        Task SetAuthDataAsync(string token, int userId, string email);
+        Task<string?> GetUserFullNameAsync(); 
+        Task SetAuthDataAsync(string token, Guid userId, string email, string fullName); 
         Task LogoutAsync();
         Task SetAuthorizationHeaderAsync();
         Task<bool> LoginAsync(string email, string password);
-        Task<bool> RegisterAsync(string email, string password, string firstName, string lastName);
+        Task<bool> RegisterAsync(RegisterRequest request); 
     }
 }

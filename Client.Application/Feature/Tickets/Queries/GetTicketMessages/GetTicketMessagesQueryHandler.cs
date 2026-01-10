@@ -1,7 +1,4 @@
-﻿using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using Client.Application.Contracts.Persistence;
+﻿using Client.Application.Contracts.Persistence;
 using Client.Application.Feature.Tickets.Commands.Ticket;
 using MediatR;
 
@@ -18,14 +15,17 @@ namespace Client.Application.Feature.Tickets.Queries.GetTicketMessages
         }
 
         public async Task<GetTicketMessagesQueryResponseDto> Handle(
-            GetTicketMessagesQuery request,
-            CancellationToken cancellationToken)
+    GetTicketMessagesQuery request,
+    CancellationToken cancellationToken)
         {
-            // Preluăm ticket-ul cu toate detaliile
-            var ticket = await _ticketRepository.GetByIdWithDetailsAsync(request.Filters.TicketId, cancellationToken);
+            var ticket = await _ticketRepository.GetByIdWithDetailsAsync(request.TicketId, cancellationToken);
 
             if (ticket == null)
                 throw new Exception("Ticket not found");
+
+            // verificăm accesul
+            if (ticket.ClientId != request.UserId && !request.IsTechSupport)
+                throw new UnauthorizedAccessException("Nu ai dreptul să vezi acest ticket");
 
             var response = new GetTicketMessagesQueryResponseDto
             {
