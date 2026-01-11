@@ -1,6 +1,6 @@
 ﻿using TicketingSystem.Domain.Enums;
 
-namespace Client.Application.Contracts.DTOs;
+namespace Client.Application.Feature.Auth.Register;
 
 public class RegisterCommandResponseDto
 {

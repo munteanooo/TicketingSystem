@@ -1,5 +1,4 @@
-﻿using Client.Application.Contracts.DTOs;
-using MediatR;
+﻿using MediatR;
 
 namespace Client.Application.Feature.Auth.Register;
 

@@ -1,5 +1,6 @@
 ﻿using Client.Application.Contracts.DTOs;
 using Client.Application.Feature.Auth.Login;
+using Client.Application.Feature.Auth.Register;
 
 namespace Client.Application.Contracts.Services
 {

@@ -1,4 +1,6 @@
-﻿namespace Client.Application.Contracts.DTOs
+﻿using Client.Application.Contracts.DTOs;
+
+namespace Client.Application.Feature.Auth.Login
 {
     public class LoginCommandResponseDto
     {

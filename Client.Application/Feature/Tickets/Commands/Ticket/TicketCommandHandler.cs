@@ -1,7 +1,7 @@
 ﻿using Client.Application.Contracts.Persistence;
 using Client.Application.Feature.Tickets.Commands.Ticket;
 using MediatR;
-public class UpdateTicketCommandHandler : IRequestHandler<UpdateTicketCommand, TicketCommandResponseDto>
+public class UpdateTicketCommandHandler : IRequestHandler<TicketCommand, TicketCommandResponseDto>
 {
     private readonly ITicketRepository _ticketRepository;
 
@@ -10,7 +10,7 @@ public class UpdateTicketCommandHandler : IRequestHandler<UpdateTicketCommand, T
         _ticketRepository = ticketRepository;
     }
 
-    public async Task<TicketCommandResponseDto> Handle(UpdateTicketCommand request, CancellationToken cancellationToken)
+    public async Task<TicketCommandResponseDto> Handle(TicketCommand request, CancellationToken cancellationToken)
     {
         var dto = request.TicketDto;
 

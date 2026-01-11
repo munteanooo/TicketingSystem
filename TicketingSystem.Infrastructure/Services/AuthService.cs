@@ -1,6 +1,7 @@
 ﻿using Client.Application.Contracts.DTOs;
 using Client.Application.Contracts.Services;
 using Client.Application.Feature.Auth.Login;
+using Client.Application.Feature.Auth.Register;
 using Microsoft.AspNetCore.Identity;
 using TicketingSystem.Domain.Enums;
 using TicketingSystem.Infrastructure.Identity;

@@ -2,5 +2,5 @@
 
 namespace Client.Application.Feature.Tickets.Commands.Ticket;
 
-public record UpdateTicketCommand(TicketCommandDto TicketDto)
+public record TicketCommand(TicketCommandDto TicketDto)
     : IRequest<TicketCommandResponseDto>;

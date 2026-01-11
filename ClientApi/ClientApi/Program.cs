@@ -1,4 +1,6 @@
 ﻿using System.Text;
+using Client.Application.Contracts.Messaging;
+using Client.Application.Contracts.Persistence;
 using Client.Application.Contracts.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics;
@@ -9,6 +11,7 @@ using Microsoft.OpenApi.Models;
 using Serilog;
 using TicketingSystem.Infrastructure.Identity;
 using TicketingSystem.Infrastructure.Persistence;
+using TicketingSystem.Infrastructure.Persistence.Repositories;
 using TicketingSystem.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -20,6 +23,11 @@ Log.Logger = new LoggerConfiguration()
     .CreateLogger();
 
 builder.Host.UseSerilog();
+
+builder.Services.AddMediatR(cfg =>
+{
+    cfg.RegisterServicesFromAssembly(typeof(Client.Application.Feature.Tickets.Commands.Create.CreateTicketCommand).Assembly);
+});
 
 // 2. Controllers
 builder.Services.AddControllers();
@@ -57,18 +65,24 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
+
+// Repositories
+builder.Services.AddScoped<ITicketRepository, TicketRepository>();
+builder.Services.AddScoped<ITicketMessageRepository, TicketMessageRepository>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+
 // 4. PostgreSQL DbContext
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
 
-// 5. Identity configuration + relaxare parola (pentru test)
+// 5. Identity configuration + parola relaxed
 builder.Services.AddIdentity<ApplicationUser, IdentityRole<Guid>>(options =>
 {
     options.Password.RequireDigit = false;
     options.Password.RequireLowercase = false;
     options.Password.RequireUppercase = false;
     options.Password.RequireNonAlphanumeric = false;
-    options.Password.RequiredLength = 4; // permite 1212
+    options.Password.RequiredLength = 4;
 })
 .AddEntityFrameworkStores<AppDbContext>()
 .AddDefaultTokenProviders();
@@ -76,6 +90,8 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole<Guid>>(options =>
 // 6. Register Services
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentUser, CurrentUser>();
 
 // 7. JWT Authentication Configuration
 var jwtSettings = configuration.GetSection("Jwt");
@@ -133,8 +149,7 @@ builder.Services.AddCors(options =>
     });
 });
 
-// 10. HttpContextAccessor + HealthChecks
-builder.Services.AddHttpContextAccessor();
+// 10. HealthChecks
 builder.Services.AddHealthChecks();
 
 var app = builder.Build();
@@ -156,16 +171,8 @@ app.UseAuthorization();
 app.MapControllers();
 app.MapHealthChecks("/health");
 
-// Seed pentru roluri
-using (var scope = app.Services.CreateScope())
-{
-    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
-    if (!await roleManager.RoleExistsAsync("Client"))
-        await roleManager.CreateAsync(new IdentityRole<Guid>("Client"));
-
-    if (!await roleManager.RoleExistsAsync("TechSupport"))
-        await roleManager.CreateAsync(new IdentityRole<Guid>("TechSupport"));
-}
+// Seed roles
+await SeedRoles(app);
 
 // Error handling
 app.UseExceptionHandler(errorApp =>
@@ -208,3 +215,24 @@ app.MapGet("/", () => Results.Json(new
 
 Log.Information("Starting Ticketing System API...");
 app.Run();
+
+static async Task SeedRoles(WebApplication application)
+{
+    try
+    {
+        using var scope = application.Services.CreateScope();
+        var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
+
+        if (!await roleManager.RoleExistsAsync("Client"))
+            await roleManager.CreateAsync(new IdentityRole<Guid>("Client"));
+
+        if (!await roleManager.RoleExistsAsync("TechSupport"))
+            await roleManager.CreateAsync(new IdentityRole<Guid>("TechSupport"));
+
+        Log.Information("Roles seeded successfully");
+    }
+    catch (Exception ex)
+    {
+        Log.Error(ex, "Error seeding roles");
+    }
+}
