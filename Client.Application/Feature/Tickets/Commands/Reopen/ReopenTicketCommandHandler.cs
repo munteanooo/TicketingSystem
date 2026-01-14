@@ -1,24 +1,31 @@
-﻿using Client.Application.Contracts.Persistence;
+﻿using Client.Application.Contracts.Messaging;
+using Client.Application.Contracts.Persistence;
+using Client.Application.Feature.Tickets.Commands.Reopen;
 using MediatR;
-using Client.Application.Feature.Tickets.Commands.Ticket;
 using TicketingSystem.Domain.Entities;
 using TicketingSystem.Domain.Enums;
-using Client.Application.Feature.Tickets.Commands.Reopen;
 
-public class ReopenTicketCommandHandler : IRequestHandler<ReopenTicketCommand, TicketCommandResponseDto>
+public class ReopenTicketCommandHandler : IRequestHandler<ReopenTicketCommand, ReopenTicketCommandResponseDto>
 {
     private readonly ITicketRepository _ticketRepository;
+    private readonly IUserRepository _userRepository;
 
-    public ReopenTicketCommandHandler(ITicketRepository ticketRepository)
+    public ReopenTicketCommandHandler(ITicketRepository ticketRepository, IUserRepository userRepository)
     {
         _ticketRepository = ticketRepository;
+        _userRepository = userRepository;
     }
 
-    public async Task<TicketCommandResponseDto> Handle(ReopenTicketCommand request, CancellationToken cancellationToken)
+    public async Task<ReopenTicketCommandResponseDto> Handle(ReopenTicketCommand request, CancellationToken cancellationToken)
     {
-        var ticket = await _ticketRepository.GetByIdAsync(request.TicketId);
+        var dto = request.ReopenDto;
+        var ticket = await _ticketRepository.GetByIdAsync(dto.TicketId);
         if (ticket == null)
             throw new Exception("Ticket not found");
+
+        var author = await _userRepository.GetByIdAsync(ticket.ClientId);
+        if (author == null)
+            throw new Exception("Client not found");
 
         ticket.Status = TicketStatus.Reopened;
         ticket.UpdatedAt = DateTime.UtcNow;
@@ -29,14 +36,13 @@ public class ReopenTicketCommandHandler : IRequestHandler<ReopenTicketCommand, T
             Id = Guid.NewGuid(),
             TicketId = ticket.Id,
             AuthorId = ticket.ClientId,
-            Content = request.Reason,
-            CreatedAt = DateTime.UtcNow
+            Content = dto.Reason,
+            CreatedAt = DateTime.UtcNow,
+            Ticket = ticket,
+            Author = author
         };
 
-        // Folosim repository-ul pentru update
         await _ticketRepository.UpdateAsync(ticket);
-
-        // Dacă repository-ul are metodă pentru mesaj, folosim add
         if (_ticketRepository is ITicketMessageRepository messageRepo)
         {
             await messageRepo.AddAsync(message);
@@ -45,9 +51,9 @@ public class ReopenTicketCommandHandler : IRequestHandler<ReopenTicketCommand, T
         return MapToDto(ticket);
     }
 
-    private TicketCommandResponseDto MapToDto(TicketingSystem.Domain.Entities.Ticket ticket)
+    private static ReopenTicketCommandResponseDto MapToDto(Ticket ticket)
     {
-        return new TicketCommandResponseDto
+        return new ReopenTicketCommandResponseDto
         {
             Id = ticket.Id,
             TicketNumber = ticket.TicketNumber,
@@ -57,8 +63,10 @@ public class ReopenTicketCommandHandler : IRequestHandler<ReopenTicketCommand, T
             Status = ticket.Status.ToString(),
             Category = ticket.Category,
             ClientId = ticket.ClientId,
+            AssignedToAgentId = ticket.AssignedToAgentId,
             CreatedAt = ticket.CreatedAt,
             UpdatedAt = ticket.UpdatedAt ?? DateTime.MinValue,
+            ResolvedAt = ticket.ResolvedAt ?? DateTime.MinValue,
         };
     }
 }

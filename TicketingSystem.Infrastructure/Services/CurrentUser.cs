@@ -13,40 +13,52 @@ namespace TicketingSystem.Infrastructure.Services
             _httpContextAccessor = httpContextAccessor;
         }
 
-        public int? UserId
+        public Guid? UserId
         {
             get
             {
-                var claim = _httpContextAccessor.HttpContext?.User
-                    .FindFirst(ClaimTypes.NameIdentifier);
-                return int.TryParse(claim?.Value, out var userId) ? userId : null;
+                var userIdClaim = _httpContextAccessor.HttpContext?.User?
+                    .FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+                return Guid.TryParse(userIdClaim, out var id) ? id : null;
             }
         }
 
-        public string? Email
-        {
-            get
-            {
-                return _httpContextAccessor.HttpContext?.User
-                    .FindFirst(ClaimTypes.Email)?.Value;
-            }
-        }
+        public string? Email => _httpContextAccessor.HttpContext?.User?
+            .FindFirst(ClaimTypes.Email)?.Value;
 
         public string? FullName
         {
             get
             {
-                return _httpContextAccessor.HttpContext?.User
-                    .FindFirst(ClaimTypes.Name)?.Value;
+                var fullNameClaim = _httpContextAccessor.HttpContext?.User?
+                    .FindFirst("fullName")?.Value;
+
+                if (!string.IsNullOrEmpty(fullNameClaim))
+                    return fullNameClaim;
+
+                var firstName = _httpContextAccessor.HttpContext?.User?
+                    .FindFirst(ClaimTypes.GivenName)?.Value;
+                var lastName = _httpContextAccessor.HttpContext?.User?
+                    .FindFirst(ClaimTypes.Surname)?.Value;
+
+                return $"{firstName} {lastName}".Trim();
             }
         }
 
-        public bool IsAuthenticated
+        public bool IsAuthenticated => _httpContextAccessor.HttpContext?.User?
+            .Identity?.IsAuthenticated ?? false;
+
+        public bool IsInRole(string role)
         {
-            get
-            {
-                return _httpContextAccessor.HttpContext?.User.Identity?.IsAuthenticated ?? false;
-            }
+            return _httpContextAccessor.HttpContext?.User?
+                .IsInRole(role) ?? false;
+        }
+
+        public bool HasClaim(string claimType, string claimValue)
+        {
+            return _httpContextAccessor.HttpContext?.User?
+                .HasClaim(claimType, claimValue) ?? false;
         }
     }
 }

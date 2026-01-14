@@ -1,4 +1,6 @@
-﻿namespace Client.Application.Contracts.Persistence
+﻿using TicketingSystem.Domain.Entities;
+
+namespace Client.Application.Contracts.Persistence
 {
     public interface IUserRepository
     {

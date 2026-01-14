@@ -1,35 +1,65 @@
-//using Microsoft.AspNetCore.Identity;
-//using TicketingSystem.Infrastructure.Data;
-//using TicketingSystem.Infrastructure.Identity;
-//using Microsoft.EntityFrameworkCore;
+using System.Text;
+using Microsoft.AspNetCore.Builder;
+using Client.Application.Contracts.Services;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using TicketingSystem.Infrastructure.Identity;
+using TicketingSystem.Infrastructure.Persistence;
+using TicketingSystem.Infrastructure.Services;
 
-//var builder = WebApplication.CreateBuilder(args);
+var builder = WebApplication.CreateBuilder(args); 
 
-//builder.Services.AddDbContext<AppDbContext>(options =>
-//    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 
-//builder.Services.AddDbContext<ApplicationIdentityDbContext>(options =>
-//    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-//builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
-//    .AddEntityFrameworkStores<ApplicationIdentityDbContext>()
-//    .AddDefaultTokenProviders();
+builder.Services.AddIdentity<ApplicationUser, IdentityRole<Guid>>()
+    .AddEntityFrameworkStores<AppDbContext>()
+    .AddDefaultTokenProviders();
 
-//builder.Services.AddControllers();
-//builder.Services.AddOpenApi();
+var jwtKey = builder.Configuration["Jwt:Key"]!;
+var key = Encoding.UTF8.GetBytes(jwtKey);
 
-//var app = builder.Build();
+// Authentication code (uncomment when ready)
+// builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+//     .AddJwtBearer(options =>
+//     {
+//         options.TokenValidationParameters = new TokenValidationParameters
+//         {
+//             ValidateIssuerSigningKey = true,
+//             IssuerSigningKey = new SymmetricSecurityKey(key),
+//             ValidateIssuer = true,
+//             ValidIssuer = builder.Configuration["Jwt:Issuer"],
+//             ValidateAudience = true,
+//             ValidAudience = builder.Configuration["Jwt:Audience"],
+//             ValidateLifetime = true
+//         };
+//     });
 
-//if (app.Environment.IsDevelopment())
-//{
-//    app.MapOpenApi();
-//}
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<ICurrentUser, CurrentUser>();
+builder.Services.AddScoped<IHttpContextAccessor, HttpContextAccessor>();
 
-//app.UseHttpsRedirection();
+builder.Services.AddCors(options =>
+    options.AddPolicy("AllowAll", p =>
+        p.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()));
 
-//app.UseAuthentication(); 
-//app.UseAuthorization();
+var app = builder.Build();
 
-//app.MapControllers();
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 
-//app.Run();
+app.UseHttpsRedirection();
+app.UseCors("AllowAll");
+app.UseAuthentication();
+app.UseAuthorization();
+app.MapControllers();
+
+app.Run();

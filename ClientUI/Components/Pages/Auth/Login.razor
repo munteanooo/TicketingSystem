@@ -1,0 +1,46 @@
+﻿@page "/auth/login"
+@using ClientUI.Models
+@using ClientUI.Services.Interfaces
+@inject IAuthService AuthService
+@inject NavigationManager Navigation
+
+<h1 style="color:red">LOGIN TEST 987654</h1>
+
+<EditForm Model="@loginModel"
+          OnValidSubmit="HandleLogin"
+          FormName="LoginForm">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div>
+        <label>Email</label>
+        <InputText @bind-Value="loginModel.Email" />
+    </div>
+
+    <div>
+        <label>Parolă</label>
+        <InputText @bind-Value="loginModel.Password" type="password" />
+    </div>
+
+    <div>
+        <InputCheckbox @bind-Value="loginModel.RememberMe" /> Ține-mă conectat
+    </div>
+
+    <button type="submit">Conectează-te</button>
+</EditForm>
+
+@code {
+    private LoginRequest loginModel { get; set; } = new();
+
+    private async Task HandleLogin()
+    {
+        Console.WriteLine("HandleLogin called");
+
+        var success = await AuthService.LoginAsync(loginModel.Email, loginModel.Password);
+
+        Console.WriteLine($"Login success = {success}");
+
+        if (success)
+            Navigation.NavigateTo("/");
+    }
+}
