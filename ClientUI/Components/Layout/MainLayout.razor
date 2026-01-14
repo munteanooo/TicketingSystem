@@ -1,0 +1,17 @@
+﻿@inherits LayoutComponentBase
+@using Microsoft.AspNetCore.Components.Routing
+
+<div class="main-layout">
+    <header>
+        <h1>Ticketing System</h1>
+        <nav>
+            <NavLink href="/">Home</NavLink> |
+            <NavLink href="/auth/login">Login</NavLink> |
+            <NavLink href="/auth/register">Register</NavLink>
+        </nav>
+    </header>
+
+    <main>
+        @Body
+    </main>
+</div>

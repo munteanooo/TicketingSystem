@@ -4,8 +4,6 @@ using Client.Application.Feature.Tickets.Commands.Create;
 using Client.Application.Feature.Tickets.Commands.Reopen;
 using Client.Application.Feature.Tickets.Commands.Ticket;
 using Client.Application.Feature.Tickets.Queries.GetClientTicketById;
-using Client.Application.Feature.Tickets.Queries.GetClientTickets;
-using Client.Application.Feature.Tickets.Queries.GetTicketMessages;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
