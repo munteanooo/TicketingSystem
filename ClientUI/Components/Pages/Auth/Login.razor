@@ -34,7 +34,7 @@
 
     private async Task HandleLogin()
     {
-        Console.WriteLine("HandleLogin called");
+        Console.WriteLine($"HandleLogin: {loginModel.Email} / {loginModel.Password}");
 
         var success = await AuthService.LoginAsync(loginModel.Email, loginModel.Password);
 
