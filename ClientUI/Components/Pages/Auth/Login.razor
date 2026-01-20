@@ -1,92 +1,87 @@
 @page "/auth/login"
 @page "/login"
 @inject IJSRuntime JS
-@inject NavigationManager Navigation
 
 <PageTitle>Login</PageTitle>
 
-<div class="container min-vh-100 d-flex align-items-center justify-content-center py-5">
-    <div class="row justify-content-center">
-        <div class="col-md-6 col-lg-5">
-            <div class="card shadow-lg border-0 rounded-4">
-                <div class="card-body p-5">
-                    <div class="text-center mb-5">
-                        <h1 class="display-5 fw-bold text-primary mb-3">Ticketing System</h1>
-                        <p class="lead text-muted">Conectează-te pentru a continua</p>
-                    </div>
-
-                    @if (!string.IsNullOrEmpty(errorMessage))
-                    {
-                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                            @errorMessage
-                            <button type="button" class="btn-close" @onclick="() => errorMessage = null"></button>
-                        </div>
-                    }
-
-                    <div class="login-form">
-                        <input id="email" type="email" class="form-control form-control-lg mb-4 px-4 py-3 border-2 rounded-4 shadow-sm"
-                               placeholder="Adresa de email" autocomplete="email" />
-
-                        <input id="pass" type="password" class="form-control form-control-lg mb-4 px-4 py-3 border-2 rounded-4 shadow-sm"
-                               placeholder="Parola" autocomplete="current-password" />
-
-                        <div class="d-flex justify-content-between align-items-center mb-4">
-                            <div class="form-check">
-                                <input id="remember" type="checkbox" class="form-check-input me-2" onchange="updateRemember()" />
-                                <label class="form-check-label" for="remember">Ține-mă conectat</label>
-                            </div>
-                            <a href="#" class="text-decoration-none text-primary fw-semibold">Ai uitat parola?</a>
-                        </div>
-
-                        <button onclick="doLogin()" class="btn btn-primary btn-lg w-100 py-3 fw-bold rounded-4 shadow-lg mb-3">
-                            <i class="bi bi-box-arrow-in-right me-2"></i>
-                            Conectează-te
-                        </button>
-                    </div>
-
-                    <div class="divider d-flex align-items-center text-muted my-4">
-                        <span class="flex-grow-1 border-top border-light"></span>
-                        <span class="px-3 small">sau</span>
-                        <span class="flex-grow-1 border-top border-light"></span>
-                    </div>
-
-                    <div class="text-center">
-                        <p class="mb-3 text-muted">
-                            Nu ai cont?
-                            <a href="/auth/register" class="text-primary fw-semibold text-decoration-none">Creează unul acum</a>
-                        </p>
-                    </div>
+<div class="d-flex justify-content-center align-items-center min-vh-100 p-4 bg-light">
+    <div class="card shadow p-5" style="max-width: 400px; width: 100%;">
+        <div class="card-body text-center mb-4">
+            <h2 class="mb-4">Ticketing System</h2>
+            @if (!string.IsNullOrEmpty(errorMessage))
+            {
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    @errorMessage
+                    <button type="button" class="btn-close" @onclick="() => errorMessage = null"></button>
                 </div>
+            }
+        </div>
+
+        <div class="login-form">
+            <input id="email" type="email" class="form-control form-control-lg mb-4 px-4 py-3 border-2 rounded-4 shadow-sm"
+                   placeholder="Adresa de email" autocomplete="email" />
+
+            <input id="pass" type="password" class="form-control form-control-lg mb-4 px-4 py-3 border-2 rounded-4 shadow-sm"
+                   placeholder="Parola" autocomplete="current-password" />
+
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div class="form-check">
+                    <input id="remember" type="checkbox" class="form-check-input me-2" onchange="updateRemember()" />
+                    <label class="form-check-label" for="remember">Ține-mă conectat</label>
+                </div>
+                <a href="#" class="text-decoration-none text-primary fw-semibold">Ai uitat parola?</a>
             </div>
+
+            <button onclick="doLogin()" class="btn btn-primary btn-lg w-100 py-3 fw-bold rounded-4 shadow-lg mb-3">
+                <i class="bi bi-box-arrow-in-right me-2"></i>
+                Conectează-te
+            </button>
+        </div>
+
+        <div class="divider d-flex align-items-center text-muted my-4">
+            <span class="flex-grow-1 border-top border-light"></span>
+            <span class="px-3 small">sau</span>
+            <span class="flex-grow-1 border-top border-light"></span>
+        </div>
+
+        <div class="text-center">
+            <p class="mb-3 text-muted">
+                Nu ai cont?
+                <a href="/auth/register" class="text-primary fw-semibold text-decoration-none">Creează unul acum</a>
+            </p>
         </div>
     </div>
 </div>
 
 <script>
     let rememberChecked = false;
+    let isLoading = false;
 
     function updateRemember() {
         rememberChecked = document.getElementById('remember').checked;
     }
 
     function doLogin() {
+        if (isLoading) return;
+
         const email = document.getElementById('email').value.trim();
         const pass = document.getElementById('pass').value;
+        const remember = document.getElementById('remember').checked;
+        const btn = document.querySelector('.login-form button');
 
         if (!email || !pass) {
-            alert('Completează email și parolă');
+            alert('Email și parolă obligatorii');
             return;
         }
 
-        console.log('🟢 JS LOGIN:', email, pass, rememberChecked ? 'remember' : 'session');
+        isLoading = true;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Se conectează...';
 
         fetch('http://localhost:5053/api/Auth/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                Email: email,
-                Password: pass
-            })
+            body: JSON.stringify({ Email: email, Password: pass })
         })
         .then(response => {
             if (!response.ok) {
@@ -95,29 +90,22 @@
             return response.json();
         })
         .then(data => {
-            console.log('✅ LOGIN OK!', data);
             localStorage.setItem('jwt_token', data.token);
-            if (rememberChecked) {
-                localStorage.setItem('remember_me', 'true');
-            }
+            if (remember) localStorage.setItem('remember_me', 'true');
             window.location.href = '/';
         })
         .catch(err => {
-            console.error('❌ LOGIN FAIL:', err);
-            alert(err.message || 'Eroare login. Verifică credentialele.');
+            alert(err.message || 'Eroare login');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-box-arrow-in-right me-2"></i>Conectează-te';
+            isLoading = false;
         });
     }
 
-    // Auto-focus + Enter
     document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('email').focus();
         document.addEventListener('keypress', e => {
-            if (e.key === 'Enter' && e.target.tagName !== 'BUTTON') {
-                const pass = document.getElementById('pass');
-                if (document.activeElement.id === 'email' && pass.value) {
-                    doLogin();
-                }
-            }
+            if (e.key === 'Enter' && !isLoading) doLogin();
         });
     });
 </script>
