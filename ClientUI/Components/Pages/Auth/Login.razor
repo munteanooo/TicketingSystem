@@ -1,46 +1,35 @@
 ﻿@page "/auth/login"
-@using ClientUI.Models
-@using ClientUI.Services.Interfaces
-@inject IAuthService AuthService
-@inject NavigationManager Navigation
 
-<h1 style="color:red">LOGIN TEST 987654</h1>
+<h1 style="color:red">FINAL LOGIN - FUNCȚIONEAZĂ AZI</h1>
 
-<EditForm Model="@loginModel"
-          OnValidSubmit="HandleLogin"
-          FormName="LoginForm">
-    <DataAnnotationsValidator />
-    <ValidationSummary />
+<input id="email" type="email" placeholder="email" style="padding:10px; width:300px; margin:5px;" />
+<input id="pass" type="password" placeholder="parola" style="padding:10px; width:300px; margin:5px;" />
+<button onclick="doLogin()" style="padding:10px 20px;">LOGIN</button>
 
-    <div>
-        <label>Email</label>
-        <InputText @bind-Value="loginModel.Email" />
-    </div>
+<script>
+    function doLogin() {
+        var email = document.getElementById('email').value;
+        var pass = document.getElementById('pass').value;
 
-    <div>
-        <label>Parolă</label>
-        <InputText @bind-Value="loginModel.Password" type="password" />
-    </div>
+        console.log('JS LOGIN:', email, pass);
 
-    <div>
-        <InputCheckbox @bind-Value="loginModel.RememberMe" /> Ține-mă conectat
-    </div>
-
-    <button type="submit">Conectează-te</button>
-</EditForm>
-
-@code {
-    private LoginRequest loginModel { get; set; } = new();
-
-    private async Task HandleLogin()
-    {
-        Console.WriteLine("HandleLogin called");
-
-        var success = await AuthService.LoginAsync(loginModel.Email, loginModel.Password);
-
-        Console.WriteLine($"Login success = {success}");
-
-        if (success)
-            Navigation.NavigateTo("/");
+        // FIX: trimite la API-ul corect (5053), NU la ClientUI (7298)
+        fetch('http://localhost:5053/api/Auth/login', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({Email: email, Password: pass})
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                console.log('LOGIN OK!', data);
+                localStorage.setItem('jwt_token', data.token);
+                window.location.href = '/';
+            } else {
+                console.error('LOGIN FAIL:', data.message);
+            }
+        })
+        .catch(err => console.error('ERROR:', err));
     }
-}
+</script>
+
