@@ -48,6 +48,7 @@ namespace ClientApi.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginCommandDto dto)
         {
+            Console.WriteLine($"API LOGIN DTO: {dto?.Email} / {dto?.Password}");
             if (!ModelState.IsValid)
                 return BadRequest(new { message = "Model invalid", errors = ModelState });
 

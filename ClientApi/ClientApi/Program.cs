@@ -161,7 +161,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Ticketing System API v1"));
 }
 
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 app.UseSerilogRequestLogging();
 app.UseCors("AllowSpecificOrigins");
 
@@ -213,7 +213,7 @@ app.MapGet("/", () => Results.Json(new
     }
 }));
 
-Log.Information("Starting Ticketing System API...");
+Log.Information("Api started");
 app.Run();
 
 static async Task SeedRoles(WebApplication application)

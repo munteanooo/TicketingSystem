@@ -5,7 +5,7 @@ using ClientUI.Services.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Razor Components (Blazor Server)
+// Blazor Server (Razor Components)
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
@@ -38,9 +38,8 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 
-// static files + antiforgery sunt ok
 app.MapStaticAssets();
 app.UseAntiforgery();
 
