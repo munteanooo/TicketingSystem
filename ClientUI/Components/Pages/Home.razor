@@ -1,4 +1,67 @@
 ﻿@page "/"
 
-<h3>Home</h3>
-<p>Bun venit în Ticketing System.</p>
+<PageTitle>Ticketing System - Acasă</PageTitle>
+
+<div class="container py-5">
+    <div class="row align-items-center min-vh-75">
+        <div class="col-lg-6 mb-5 mb-lg-0">
+            <h1 class="display-4 fw-bold mb-4">Ticketing System</h1>
+            <h2 class="display-6 fw-normal text-primary mb-4">Sistem complet de management tichete</h2>
+            <div class="row g-3 mb-5">
+                <div class="col-md-6">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-body p-4">
+                            <i class="bi bi-ticket-detailed-fill display-6 text-primary mb-3 d-block"></i>
+                            <h5 class="fw-bold mb-2">Creare rapidă</h5>
+                            <p class="small text-muted">Raportează probleme în 30 secunde</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-body p-4">
+                            <i class="bi bi-people-fill display-6 text-success mb-3 d-block"></i>
+                            <h5 class="fw-bold mb-2">Echipe</h5>
+                            <p class="small text-muted">Client → Tech Support workflow</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="d-grid gap-3 d-md-flex justify-content-md-start">
+                <a href="/auth/login" class="btn btn-primary btn-lg px-5 py-3 fw-semibold rounded-pill shadow-lg">
+                    <i class="bi bi-box-arrow-in-right me-2"></i>Incepe acum
+                </a>
+                <a href="/auth/register" class="btn btn-outline-primary btn-lg px-5 py-3 fw-semibold rounded-pill">
+                    <i class="bi bi-person-plus me-2"></i>Creează cont gratuit
+                </a>
+            </div>
+        </div>
+        <div class="col-lg-6 text-center">
+            <img src="https://via.placeholder.com/500x400/007bff/f8f9fa?text=Ticketing+Dashboard"
+                 alt="Dashboard preview" class="img-fluid rounded-4 shadow-lg" />
+        </div>
+    </div>
+
+    <div class="row mt-5">
+        <div class="col-12 text-center">
+            <h3 class="mb-4">Pentru ce?</h3>
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <i class="bi bi-bug-fill display-1 text-warning mb-3 d-block"></i>
+                    <h5>Reclamații IT</h5>
+                    <p class="text-muted">Imprimante, rețea, softuri</p>
+                </div>
+                <div class="col-md-4">
+                    <i class="bi bi-tools display-1 text-info mb-3 d-block"></i>
+                    <h5>Service Desk</h5>
+                    <p class="text-muted">Hardware, mentenanță</p>
+                </div>
+                <div class="col-md-4">
+                    <i class="bi bi-people display-1 text-success mb-3 d-block"></i>
+                    <h5>Echipe interne</h5>
+                    <p class="text-muted">Client → Support workflow</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

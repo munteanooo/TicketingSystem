@@ -24,16 +24,17 @@
                     }
 
                     <div class="login-form">
-                        <input id="email" type="email" class="form-control form-control-lg mb-4 px-4 py-3 border-2 rounded-4 shadow-sm" 
+                        <input id="email" type="email" class="form-control form-control-lg mb-4 px-4 py-3 border-2 rounded-4 shadow-sm"
                                placeholder="Adresa de email" autocomplete="email" />
-                        
-                        <input id="pass" type="password" class="form-control form-control-lg mb-4 px-4 py-3 border-2 rounded-4 shadow-sm" 
+
+                        <input id="pass" type="password" class="form-control form-control-lg mb-4 px-4 py-3 border-2 rounded-4 shadow-sm"
                                placeholder="Parola" autocomplete="current-password" />
-                        
+
                         <div class="d-flex justify-content-between align-items-center mb-4">
-                            <label class="form-check-label">
-                                <InputCheckbox id="remember" class="form-check-input me-2" /> Ține-mă conectat
-                            </label>
+                            <div class="form-check">
+                                <input id="remember" type="checkbox" class="form-check-input me-2" onchange="updateRemember()" />
+                                <label class="form-check-label" for="remember">Ține-mă conectat</label>
+                            </div>
                             <a href="#" class="text-decoration-none text-primary fw-semibold">Ai uitat parola?</a>
                         </div>
 
@@ -50,7 +51,8 @@
                     </div>
 
                     <div class="text-center">
-                        <p class="mb-3 text-muted">Nu ai cont?
+                        <p class="mb-3 text-muted">
+                            Nu ai cont?
                             <a href="/auth/register" class="text-primary fw-semibold text-decoration-none">Creează unul acum</a>
                         </p>
                     </div>
@@ -61,24 +63,29 @@
 </div>
 
 <script>
+    let rememberChecked = false;
+
+    function updateRemember() {
+        rememberChecked = document.getElementById('remember').checked;
+    }
+
     function doLogin() {
         const email = document.getElementById('email').value.trim();
         const pass = document.getElementById('pass').value;
-        const remember = document.getElementById('remember').checked;
 
         if (!email || !pass) {
             alert('Completează email și parolă');
             return;
         }
 
-        console.log('🟢 JS LOGIN:', email, pass);
+        console.log('🟢 JS LOGIN:', email, pass, rememberChecked ? 'remember' : 'session');
 
         fetch('http://localhost:5053/api/Auth/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                Email: email, 
-                Password: pass 
+            body: JSON.stringify({
+                Email: email,
+                Password: pass
             })
         })
         .then(response => {
@@ -90,7 +97,7 @@
         .then(data => {
             console.log('✅ LOGIN OK!', data);
             localStorage.setItem('jwt_token', data.token);
-            if (remember) {
+            if (rememberChecked) {
                 localStorage.setItem('remember_me', 'true');
             }
             window.location.href = '/';
@@ -101,21 +108,20 @@
         });
     }
 
-    // Auto-focus email
+    // Auto-focus + Enter
     document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('email').focus();
+        document.addEventListener('keypress', e => {
+            if (e.key === 'Enter' && e.target.tagName !== 'BUTTON') {
+                const pass = document.getElementById('pass');
+                if (document.activeElement.id === 'email' && pass.value) {
+                    doLogin();
+                }
+            }
+        });
     });
 </script>
 
 @code {
     private string? errorMessage;
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            await JS.InvokeVoidAsync("eval", 
-                "document.getElementById('email').addEventListener('keypress', function(e) { if (e.key === 'Enter') doLogin(); });");
-        }
-    }
 }

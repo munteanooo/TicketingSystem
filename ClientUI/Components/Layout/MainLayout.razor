@@ -1,17 +1,31 @@
 ﻿@inherits LayoutComponentBase
 @using Microsoft.AspNetCore.Components.Routing
+@inject Blazored.LocalStorage.ILocalStorageService LocalStorage
+@inject NavigationManager Nav
 
-<div class="main-layout">
-    <header>
-        <h1>Ticketing System</h1>
-        <nav>
-            <NavLink href="/">Home</NavLink> |
-            <NavLink href="/auth/login">Login</NavLink> |
-            <NavLink href="/auth/register">Register</NavLink>
-        </nav>
-    </header>
+<div class="page">
+    <div class="sidebar">
+    </div>
 
     <main>
-        @Body
+        <div class="top-row px-4 auth-buttons">
+            <a href="/auth/login" class="btn btn-outline-primary me-2">Login</a>
+            <a href="/auth/register" class="btn btn-primary">Register</a>
+        </div>
+
+        <article class="content px-4">
+            @Body
+        </article>
     </main>
 </div>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        var token = await LocalStorage.GetItemAsync<string>("jwt_token");
+        if (!string.IsNullOrEmpty(token))
+        {
+            // Hide buttons sau redirect dashboard
+        }
+    }
+}

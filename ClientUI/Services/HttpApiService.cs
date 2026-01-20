@@ -1,5 +1,4 @@
-﻿using System.Net.Http.Json;
-using ClientUI.Services.Interfaces;
+﻿using ClientUI.Services.Interfaces;
 
 namespace ClientUI.Services
 {
@@ -17,51 +16,63 @@ namespace ClientUI.Services
             _httpClient = httpClient;
             _configuration = configuration;
             _logger = logger;
-            _httpClient.BaseAddress = new Uri(configuration["ApiSettings:BaseUrl"] ?? "https://localhost:5001");
+            _httpClient.BaseAddress = new Uri(_configuration["ApiSettings:BaseUrl"]! ?? "http://localhost:5053");
         }
 
-        public async Task<T> GetAsync<T>(string endpoint)
+        public async Task<T?> GetAsync<T>(string endpoint)
         {
             try
             {
                 var response = await _httpClient.GetAsync(endpoint);
-                response.EnsureSuccessStatusCode();
-                return await response.Content.ReadFromJsonAsync<T>();
+                if (response.IsSuccessStatusCode)
+                {
+                    return await response.Content.ReadFromJsonAsync<T>();
+                }
+                _logger.LogWarning("GET {Endpoint} failed: {Status}", endpoint, response.StatusCode);
+                return default;
             }
-            catch (HttpRequestException ex)
+            catch (Exception ex)
             {
-                _logger.LogError($"API GET Error: {ex.Message}");
-                throw;
+                _logger.LogError(ex, "GET {Endpoint} error", endpoint);
+                return default;
             }
         }
 
-        public async Task<T> PostAsync<T>(string endpoint, object data)
+        public async Task<T?> PostAsync<T>(string endpoint, object data)
         {
             try
             {
                 var response = await _httpClient.PostAsJsonAsync(endpoint, data);
-                response.EnsureSuccessStatusCode();
-                return await response.Content.ReadFromJsonAsync<T>();
+                if (response.IsSuccessStatusCode)
+                {
+                    return await response.Content.ReadFromJsonAsync<T>();
+                }
+                _logger.LogWarning("POST {Endpoint} failed: {Status}", endpoint, response.StatusCode);
+                return default;
             }
-            catch (HttpRequestException ex)
+            catch (Exception ex)
             {
-                _logger.LogError($"API POST Error: {ex.Message}");
-                throw;
+                _logger.LogError(ex, "POST {Endpoint} error", endpoint);
+                return default;
             }
         }
 
-        public async Task<T> PutAsync<T>(string endpoint, object data)
+        public async Task<T?> PutAsync<T>(string endpoint, object data)
         {
             try
             {
                 var response = await _httpClient.PutAsJsonAsync(endpoint, data);
-                response.EnsureSuccessStatusCode();
-                return await response.Content.ReadFromJsonAsync<T>();
+                if (response.IsSuccessStatusCode)
+                {
+                    return await response.Content.ReadFromJsonAsync<T>();
+                }
+                _logger.LogWarning("PUT {Endpoint} failed: {Status}", endpoint, response.StatusCode);
+                return default;
             }
-            catch (HttpRequestException ex)
+            catch (Exception ex)
             {
-                _logger.LogError($"API PUT Error: {ex.Message}");
-                throw;
+                _logger.LogError(ex, "PUT {Endpoint} error", endpoint);
+                return default;
             }
         }
 
@@ -72,9 +83,9 @@ namespace ClientUI.Services
                 var response = await _httpClient.DeleteAsync(endpoint);
                 response.EnsureSuccessStatusCode();
             }
-            catch (HttpRequestException ex)
+            catch (Exception ex)
             {
-                _logger.LogError($"API DELETE Error: {ex.Message}");
+                _logger.LogError(ex, "DELETE {Endpoint} error", endpoint);
                 throw;
             }
         }
