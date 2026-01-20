@@ -1,35 +1,121 @@
-﻿@page "/auth/login"
+@page "/auth/login"
+@page "/login"
+@inject IJSRuntime JS
+@inject NavigationManager Navigation
 
-<h1 style="color:red">FINAL LOGIN - FUNCȚIONEAZĂ AZI</h1>
+<PageTitle>Login</PageTitle>
 
-<input id="email" type="email" placeholder="email" style="padding:10px; width:300px; margin:5px;" />
-<input id="pass" type="password" placeholder="parola" style="padding:10px; width:300px; margin:5px;" />
-<button onclick="doLogin()" style="padding:10px 20px;">LOGIN</button>
+<div class="container min-vh-100 d-flex align-items-center justify-content-center py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card shadow-lg border-0 rounded-4">
+                <div class="card-body p-5">
+                    <div class="text-center mb-5">
+                        <h1 class="display-5 fw-bold text-primary mb-3">Ticketing System</h1>
+                        <p class="lead text-muted">Conectează-te pentru a continua</p>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(errorMessage))
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            @errorMessage
+                            <button type="button" class="btn-close" @onclick="() => errorMessage = null"></button>
+                        </div>
+                    }
+
+                    <div class="login-form">
+                        <input id="email" type="email" class="form-control form-control-lg mb-4 px-4 py-3 border-2 rounded-4 shadow-sm" 
+                               placeholder="Adresa de email" autocomplete="email" />
+                        
+                        <input id="pass" type="password" class="form-control form-control-lg mb-4 px-4 py-3 border-2 rounded-4 shadow-sm" 
+                               placeholder="Parola" autocomplete="current-password" />
+                        
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <label class="form-check-label">
+                                <InputCheckbox id="remember" class="form-check-input me-2" /> Ține-mă conectat
+                            </label>
+                            <a href="#" class="text-decoration-none text-primary fw-semibold">Ai uitat parola?</a>
+                        </div>
+
+                        <button onclick="doLogin()" class="btn btn-primary btn-lg w-100 py-3 fw-bold rounded-4 shadow-lg mb-3">
+                            <i class="bi bi-box-arrow-in-right me-2"></i>
+                            Conectează-te
+                        </button>
+                    </div>
+
+                    <div class="divider d-flex align-items-center text-muted my-4">
+                        <span class="flex-grow-1 border-top border-light"></span>
+                        <span class="px-3 small">sau</span>
+                        <span class="flex-grow-1 border-top border-light"></span>
+                    </div>
+
+                    <div class="text-center">
+                        <p class="mb-3 text-muted">Nu ai cont?
+                            <a href="/auth/register" class="text-primary fw-semibold text-decoration-none">Creează unul acum</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 <script>
     function doLogin() {
-        var email = document.getElementById('email').value;
-        var pass = document.getElementById('pass').value;
+        const email = document.getElementById('email').value.trim();
+        const pass = document.getElementById('pass').value;
+        const remember = document.getElementById('remember').checked;
 
-        console.log('JS LOGIN:', email, pass);
+        if (!email || !pass) {
+            alert('Completează email și parolă');
+            return;
+        }
 
-        // FIX: trimite la API-ul corect (5053), NU la ClientUI (7298)
+        console.log('🟢 JS LOGIN:', email, pass);
+
         fetch('http://localhost:5053/api/Auth/login', {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({Email: email, Password: pass})
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                Email: email, 
+                Password: pass 
+            })
         })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                console.log('LOGIN OK!', data);
-                localStorage.setItem('jwt_token', data.token);
-                window.location.href = '/';
-            } else {
-                console.error('LOGIN FAIL:', data.message);
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(err => { throw err; });
             }
+            return response.json();
         })
-        .catch(err => console.error('ERROR:', err));
+        .then(data => {
+            console.log('✅ LOGIN OK!', data);
+            localStorage.setItem('jwt_token', data.token);
+            if (remember) {
+                localStorage.setItem('remember_me', 'true');
+            }
+            window.location.href = '/';
+        })
+        .catch(err => {
+            console.error('❌ LOGIN FAIL:', err);
+            alert(err.message || 'Eroare login. Verifică credentialele.');
+        });
     }
+
+    // Auto-focus email
+    document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('email').focus();
+    });
 </script>
 
+@code {
+    private string? errorMessage;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JS.InvokeVoidAsync("eval", 
+                "document.getElementById('email').addEventListener('keypress', function(e) { if (e.key === 'Enter') doLogin(); });");
+        }
+    }
+}
