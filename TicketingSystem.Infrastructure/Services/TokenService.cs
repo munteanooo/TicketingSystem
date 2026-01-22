@@ -155,8 +155,15 @@ namespace TicketingSystem.Infrastructure.Services
 
         public async Task<bool> ValidateTokenAsync(string token)
         {
+            if (string.IsNullOrWhiteSpace(token))
+                return false;
+
             var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!);
+            var keyString = _configuration["Jwt:Key"];
+            if (string.IsNullOrEmpty(keyString))
+                throw new InvalidOperationException("JWT Key is missing in configuration");
+
+            var key = Encoding.UTF8.GetBytes(keyString);
 
             try
             {
@@ -174,11 +181,13 @@ namespace TicketingSystem.Infrastructure.Services
 
                 return true;
             }
-            catch
+            catch (Exception ex)
             {
+
                 return false;
             }
         }
+
 
         public async Task RevokeTokenAsync(string refreshToken)
         {

@@ -10,5 +10,6 @@ namespace Client.Application.Feature.Auth.Login
         public DateTime ExpiresAt { get; set; }
         public UserDto User { get; set; } = null!; 
         public string Message { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
     }
 }

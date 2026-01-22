@@ -10,6 +10,9 @@
     <DockerServiceName>techui.server</DockerServiceName>
   </PropertyGroup>
   <ItemGroup>
+    <None Remove="ClientUI\**" />
+  </ItemGroup>
+  <ItemGroup>
     <None Include="docker-compose.override.yml">
       <DependentUpon>docker-compose.yml</DependentUpon>
     </None>

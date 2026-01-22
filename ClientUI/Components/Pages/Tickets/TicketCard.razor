@@ -1,0 +1,45 @@
+﻿@using ClientUI.Models
+@using MudBlazor
+
+<MudCard Outlined="true" Class="mb-4">
+    <MudCardHeader>
+        <MudIcon Icon="@GetIcon(Ticket.Priority)" Color="@GetColor(Ticket.Priority)" />
+        <MudText Typo="Typo.h6">@Ticket.Title</MudText>
+
+        <MudButton Variant="Variant.Text" Href="@($"/tickets/{Ticket.Id}")">
+            Detalii
+        </MudButton>
+    </MudCardHeader>
+
+    <MudCardContent>
+        <MudText Typo="Typo.caption">
+            @Ticket.Category • @Ticket.Priority • @Ticket.Status
+        </MudText>
+
+        <MudText Typo="Typo.body2">
+            @Ticket.Description
+        </MudText>
+    </MudCardContent>
+</MudCard>
+
+@code {
+    [Parameter] public TicketDto Ticket { get; set; } = default!;
+
+    private string GetIcon(string p) => p switch
+    {
+        "Urgent" => Icons.Material.Filled.PriorityHigh,
+        "High" => Icons.Material.Filled.Warning,
+        "Normal" => Icons.Material.Filled.Remove,
+        "Low" => Icons.Material.Filled.KeyboardArrowDown,
+        _ => Icons.Material.Filled.Label
+    };
+
+    private Color GetColor(string p) => p switch
+    {
+        "Urgent" => Color.Error,
+        "High" => Color.Warning,
+        "Normal" => Color.Info,
+        "Low" => Color.Success,
+        _ => Color.Default
+    };
+}

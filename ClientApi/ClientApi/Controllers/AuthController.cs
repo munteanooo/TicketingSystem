@@ -1,6 +1,7 @@
 ﻿using Client.Application.Feature.Auth.Login;
 using Client.Application.Feature.Auth.Register;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ClientApi.Controllers
@@ -17,12 +18,11 @@ namespace ClientApi.Controllers
         }
 
         [HttpPost("register")]
+        [AllowAnonymous]
         public async Task<IActionResult> Register([FromBody] RegisterCommandDto dto)
         {
             if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
+                return BadRequest(new { message = "Model invalid", errors = ModelState });
 
             try
             {
@@ -46,9 +46,11 @@ namespace ClientApi.Controllers
         }
 
         [HttpPost("login")]
+        [AllowAnonymous]
         public async Task<IActionResult> Login([FromBody] LoginCommandDto dto)
         {
-            Console.WriteLine($"API LOGIN DTO: {dto?.Email} / {dto?.Password}");
+            Console.WriteLine($"🔐 API LOGIN DTO: {dto?.Email} / {dto?.Password}");
+
             if (!ModelState.IsValid)
                 return BadRequest(new { message = "Model invalid", errors = ModelState });
 
@@ -58,12 +60,29 @@ namespace ClientApi.Controllers
                 var response = await _mediator.Send(command);
 
                 if (!response.Success)
-                    return BadRequest(response);
+                {
+                    Console.WriteLine($"❌ Login failed: {response.Message}");
+                    return Unauthorized(response);
+                }
 
-                return Ok(response);
+                // 🔑 Mapează răspunsul handler-ului la LoginResponse
+                var loginResponse = new LoginResponse
+                {
+                    Success = response.Success,
+                    Message = response.Message,
+                    Token = response.Token ?? string.Empty,
+                    RefreshToken = response.RefreshToken ?? string.Empty,
+                    UserId = response.User?.Id ?? Guid.Empty,
+                    Email = response.User?.Email ?? string.Empty,
+                    FullName = response.User?.FullName ?? string.Empty
+                };
+
+                Console.WriteLine($"✅ Login successful: {response.Email}");
+                return Ok(loginResponse);
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"❌ Login exception: {ex.Message}");
                 return StatusCode(500, new
                 {
                     message = "A apărut o eroare la login",
@@ -74,10 +93,11 @@ namespace ClientApi.Controllers
         }
 
         [HttpPost("refresh")]
+        [Authorize]
         public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequest request)
         {
             if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+                return BadRequest(new { message = "Model invalid", errors = ModelState });
 
             try
             {
@@ -90,12 +110,13 @@ namespace ClientApi.Controllers
                 var response = await authService.RefreshTokenAsync(request.RefreshToken);
 
                 if (!response.Success)
-                    return BadRequest(response);
+                    return Unauthorized(response);
 
                 return Ok(response);
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"❌ Refresh token exception: {ex.Message}");
                 return StatusCode(500, new
                 {
                     message = "A apărut o eroare la refresh token",
@@ -105,6 +126,7 @@ namespace ClientApi.Controllers
         }
 
         [HttpPost("logout")]
+        [Authorize]
         public async Task<IActionResult> Logout([FromBody] LogoutRequest request)
         {
             try
@@ -117,10 +139,12 @@ namespace ClientApi.Controllers
 
                 await authService.LogoutAsync(request.UserId);
 
+                Console.WriteLine($"🚪 User {request.UserId} logged out");
                 return Ok(new { message = "Logout successful" });
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"❌ Logout exception: {ex.Message}");
                 return StatusCode(500, new
                 {
                     message = "A apărut o eroare la logout",
@@ -130,11 +154,25 @@ namespace ClientApi.Controllers
         }
     }
 
+    // 📋 DTO pentru login response
+    public class LoginResponse
+    {
+        public bool Success { get; set; }
+        public string Message { get; set; } = string.Empty;
+        public string Token { get; set; } = string.Empty;
+        public string RefreshToken { get; set; } = string.Empty;
+        public Guid UserId { get; set; }
+        public string Email { get; set; } = string.Empty;
+        public string FullName { get; set; } = string.Empty;
+    }
+
+    // 📋 DTO pentru refresh request
     public class RefreshTokenRequest
     {
         public string RefreshToken { get; set; } = string.Empty;
     }
 
+    // 📋 DTO pentru logout request
     public class LogoutRequest
     {
         public Guid UserId { get; set; }

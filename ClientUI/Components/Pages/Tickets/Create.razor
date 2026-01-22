@@ -1,0 +1,79 @@
+﻿@page "/tickets/create"
+@using ClientUI.Models
+@using ClientUI.Services.Interfaces
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Web
+@using MudBlazor
+@inject ITicketService TicketService
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+@attribute [Authorize]
+
+<PageTitle>Creează ticket</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-4">
+    <MudCard Elevation="6" Class="pa-4">
+        <MudText Typo="Typo.h5" Class="mb-4">Ticket nou</MudText>
+
+        <MudTextField T="string" Label="Titlu" Variant="Variant.Outlined" @bind-Value="model.Title" Required="true" />
+        <MudTextField T="string" Label="Descriere" Variant="Variant.Outlined" Lines="4" @bind-Value="model.Description" />
+
+        <MudSelect T="string" Label="Prioritate" @bind-Value="model.Priority">
+            <MudSelectItem T="string" Value="@("Low")">Low</MudSelectItem>
+            <MudSelectItem T="string" Value="@("Normal")">Normal</MudSelectItem>
+            <MudSelectItem T="string" Value="@("High")">High</MudSelectItem>
+            <MudSelectItem T="string" Value="@("Urgent")">Urgent</MudSelectItem>
+        </MudSelect>
+
+        <MudSelect T="string" Label="Categorie" @bind-Value="model.Category">
+            <MudSelectItem T="string" Value="@("General")">General</MudSelectItem>
+            <MudSelectItem T="string" Value="@("Bug")">Bug</MudSelectItem>
+            <MudSelectItem T="string" Value="@("Feature")">Feature</MudSelectItem>
+            <MudSelectItem T="string" Value="@("Access")">Access</MudSelectItem>
+        </MudSelect>
+
+        <div class="mt-4 d-flex justify-content-end gap-2">
+            <MudButton Variant="Variant.Text" OnClick="Cancel">Anulează</MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="CreateTicket">Creează</MudButton>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(error))
+        {
+            <MudAlert Severity="Severity.Error" Class="mt-2">@error</MudAlert>
+        }
+    </MudCard>
+</MudContainer>
+
+@code {
+    private CreateTicketRequest model = new();
+    private string? error;
+
+    private void Cancel() => Navigation.NavigateTo("/tickets");
+
+    private async Task CreateTicket()
+    {
+        error = null;
+        if (string.IsNullOrWhiteSpace(model.Title))
+        {
+            error = "Titlul este obligatoriu.";
+            return;
+        }
+
+        try
+        {
+            var ok = await TicketService.CreateTicketAsync(model);
+            if (ok)
+            {
+                Navigation.NavigateTo("/tickets", true);
+            }
+            else
+            {
+                error = "Eroare la crearea ticketului.";
+            }
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+    }
+}

@@ -12,7 +12,7 @@ namespace ClientUI.Services.Interfaces
         Task SetAuthDataAsync(string token, Guid userId, string email, string fullName); 
         Task LogoutAsync();
         Task SetAuthorizationHeaderAsync();
-        Task<bool> LoginAsync(string email, string password);
+        Task<string?> LoginAsync(string email, string password);
         Task<bool> RegisterAsync(RegisterRequest request); 
     }
 }

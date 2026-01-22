@@ -1,56 +1,36 @@
 ﻿@inherits LayoutComponentBase
-@inject Blazored.LocalStorage.ILocalStorageService LocalStorage
-@inject NavigationManager Nav
-@using Microsoft.AspNetCore.Components.Routing
+@using ClientUI.Services
+@using Microsoft.AspNetCore.Components.Authorization
+@using MudBlazor
 
-<div class="main-layout">
-    <header class="bg-white shadow-sm border-bottom">
-        <nav class="container py-3">
-            <div class="d-flex justify-content-between align-items-center">
-                <a href="/" class="h3 mb-0 text-decoration-none fw-bold text-primary">
-                    <i class="bi bi-ticket-detailed me-2"></i>Ticketing
-                </a>
-                <div class="d-flex gap-2">
-                    @if (hasToken)
-                    {
-                        <a href="/tickets" class="btn btn-outline-primary btn-sm">Tickete</a>
-                        <a href="/tickets/create" class="btn btn-primary btn-sm">
-                            <i class="bi bi-plus me-1"></i>Nou
-                        </a>
-                        <a href="/logout" class="btn btn-outline-secondary btn-sm">Ieșire</a>
-                    }
-                    else
-                    {
-                        <a href="/auth/login" class="btn btn-outline-primary btn-sm me-2">Login</a>
-                        <a href="/auth/register" class="btn btn-primary btn-sm">Register</a>
-                    }
-                </div>
+<MudThemeProvider />
+<MudDialogProvider />
+<MudSnackbarProvider>
+    <MudLayout>
+        <MudAppBar Elevation="1" Color="Color.Primary">
+            <MudText Typo="Typo.h6" Class="fw-bold">
+                <i class="bi bi-ticket-detailed-fill me-2"></i>Ticketing System
+            </MudText>
+            <MudSpacer />
+            <MudButton Color="Color.Inherit" Variant="Variant.Text" OnClick="@Logout" Class="text-white">
+                <i class="bi bi-box-arrow-right me-1"></i> Logout
+            </MudButton>
+        </MudAppBar>
+        <MudMainContent Class="pt-4">
+            <div class="container-fluid">
+                @Body
             </div>
-        </nav>
-    </header>
-
-    <main class="flex-grow-1">
-        @Body
-    </main>
-</div>
+        </MudMainContent>
+    </MudLayout>
+</MudSnackbarProvider>
 
 @code {
-    private bool hasToken = false;
+    [Inject] private JwtAuthStateProvider AuthProvider { get; set; } = null!;
+    [Inject] private NavigationManager Navigation { get; set; } = null!;
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)  // ← AFTER RENDER
+    private async Task Logout()
     {
-        if (firstRender)
-        {
-            try
-            {
-                var token = await LocalStorage.GetItemAsync<string>("jwt_token");
-                hasToken = !string.IsNullOrEmpty(token);
-                StateHasChanged();
-            }
-            catch
-            {
-                hasToken = false;
-            }
-        }
+        await AuthProvider.LogoutAsync();
+        Navigation.NavigateTo("/auth/login", true);
     }
 }

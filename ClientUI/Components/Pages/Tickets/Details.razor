@@ -1,0 +1,88 @@
+﻿@page "/tickets/{TicketId:guid}"
+@attribute [Authorize]
+@inject ITicketService TicketService
+@inject NavigationManager Navigation
+@inject IAuthService AuthService
+@using ClientUI.Models
+@using ClientUI.Services.Interfaces
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Web
+@using MudBlazor
+
+<PageTitle>Detalii Ticket</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-5">
+    @if (isLoading)
+    {
+        <MudProgressCircular Size="Size.Large" Indeterminate="true" Class="mx-auto my-5" />
+    }
+    else if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <MudAlert Severity="Severity.Error">@errorMessage</MudAlert>
+    }
+    else if (ticket == null)
+    {
+        <MudText>Ticketul nu a fost găsit.</MudText>
+    }
+    else
+    {
+        <MudCard Elevation="6" Class="pa-4">
+            <MudText Typo="Typo.h5" Class="mb-3">#@ticket.Id - @ticket.Description</MudText>
+            <MudDivider Class="mb-3" />
+
+            <MudText Class="mb-2"><b>Status:</b> @ticket.Status</MudText>
+            <MudText Class="mb-2"><b>Creat la:</b> @ticket.CreatedAt.ToString("g")</MudText>
+            <MudText Class="mb-4"><b>Descriere:</b></MudText>
+            <MudPaper Class="pa-3 mb-4">@ticket.Description</MudPaper>
+
+            <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="@GoBack">
+                Înapoi la Tickete
+            </MudButton>
+        </MudCard>
+    }
+</MudContainer>
+
+@code {
+    [Parameter]
+    public Guid TicketId { get; set; }
+
+    private TicketDto? ticket;
+    private bool isLoading = true;
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            if (!await AuthService.IsAuthenticatedAsync())
+            {
+                Navigation.NavigateTo("/login", true);
+                return;
+            }
+
+            isLoading = true;
+
+            // Preluăm toate ticketele utilizatorului
+            var tickets = await TicketService.GetMyTicketsAsync();
+            ticket = tickets?.FirstOrDefault(t => t.Id == TicketId);
+
+            if (ticket == null)
+            {
+                errorMessage = "Ticketul specificat nu există sau nu ai acces la el.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Eroare la încărcarea ticketului: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void GoBack()
+    {
+        Navigation.NavigateTo("/tickets");
+    }
+}

@@ -121,7 +121,78 @@
         });
     });
 </script>
+@inject IAuthService AuthService
+@inject JwtAuthStateProvider AuthProvider
+@inject NavigationManager Navigation
+@using ClientUI.Services
+@using ClientUI.Services.Interfaces
+@using Microsoft.AspNetCore.Components.Web
+@using MudBlazor
+
+<PageTitle>Login</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-5">
+    <MudCard Elevation="6" Class="pa-5">
+        <MudText Typo="Typo.h4" Class="mb-4 text-center">Ticketing System</MudText>
+
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <MudAlert Severity="Severity.Error" Class="mb-3">@errorMessage</MudAlert>
+        }
+
+        <MudTextField @bind-Value="email" Label="Email" Variant="Variant.Outlined" FullWidth="true" />
+        <MudTextField @bind-Value="password" Label="Parolă" Variant="Variant.Outlined" FullWidth="true" InputType="InputType.Password" Class="mt-3" />
+
+        <MudCheckBox @bind-Checked="rememberMe" T="bool" Label="Ține-mă conectat" Class="mt-3" />
+
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="mt-4 w-100" OnClick="LoginAsync" Disabled="@isLoading">
+            @if (isLoading)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="me-2" />
+                        }
+            else
+            {
+                <i class="bi bi-box-arrow-in-right me-2"></i>
+                        }
+        </MudButton>
+
+        <MudText Class="mt-3 text-center">
+            Nu ai cont?
+            <MudLink Href="/auth/register">Creează unul acum</MudLink>
+        </MudText>
+    </MudCard>
+</MudContainer>
 
 @code {
+    private string email = string.Empty;
+    private string password = string.Empty;
+    private bool rememberMe = false;
+    private bool isLoading = false;
     private string? errorMessage;
+
+    private async Task LoginAsync()
+    {
+        errorMessage = null;
+        isLoading = true;
+        try
+        {
+            var token = await AuthService.LoginAsync(email, password);
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                errorMessage = "Email sau parola greșite.";
+                return;
+            }
+
+            await AuthProvider.SetTokenAsync(token);
+            Navigation.NavigateTo("/tickets", true);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Eroare la login: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
 }

@@ -1,66 +1,64 @@
-﻿using Blazored.LocalStorage;
-using ClientUI.Components;
-using ClientUI.Services;
+﻿using ClientUI.Services;
 using ClientUI.Services.Interfaces;
-using Microsoft.AspNetCore.Authentication.Cookies;
+using ClientUI.Components;
+using Blazored.LocalStorage;
+using MudBlazor.Services;
+using Microsoft.AspNetCore.Components.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Blazor Server (Razor Components)
+// 1️⃣ Razor Components
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
-// 1. AUTHENTICATION - PENTRU [Authorize]
-builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-    .AddCookie(options =>
-    {
-        options.LoginPath = "/auth/login";
-        options.LogoutPath = "/logout";
-        options.ExpireTimeSpan = TimeSpan.FromDays(14);
-        options.SlidingExpiration = true;
-        options.Cookie.HttpOnly = true;
-        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
-    });
+// 2️⃣ MudBlazor
+builder.Services.AddMudServices();
 
-// 2. AUTHORIZATION
-builder.Services.AddAuthorization();
-
-// HttpClient către API
-builder.Services.AddHttpClient<IAuthService, AuthService>((sp, client) =>
-{
-    var config = sp.GetRequiredService<IConfiguration>();
-    var baseUrl = config["ApiSettings:BaseUrl"] ?? "http://localhost:5053";
-    client.BaseAddress = new Uri(baseUrl);
-    client.DefaultRequestHeaders.Add("Accept", "application/json");
-});
-
-builder.Services.AddHttpClient<ITicketService, TicketService>((sp, client) =>
-{
-    var config = sp.GetRequiredService<IConfiguration>();
-    var baseUrl = config["ApiSettings:BaseUrl"] ?? "http://localhost:5053";
-    client.BaseAddress = new Uri(baseUrl);
-    client.DefaultRequestHeaders.Add("Accept", "application/json");
-});
-
-// LocalStorage
+// 3️⃣ Blazored LocalStorage
 builder.Services.AddBlazoredLocalStorage();
+
+// 4️⃣ Authentication & Authorization
+builder.Services.AddAuthorization();
+builder.Services.AddAuthorizationCore();
+builder.Services.AddAntiforgery();
+builder.Services.AddScoped<JwtAuthStateProvider>();
+builder.Services.AddScoped<AuthenticationStateProvider>(
+    sp => sp.GetRequiredService<JwtAuthStateProvider>());
+
+// 5️⃣ HTTP Client Handler pentru JWT
+builder.Services.AddScoped<AuthHttpClientHandler>();
+
+// 6️⃣ AuthService - cu AuthHttpClientHandler
+builder.Services.AddHttpClient<IAuthService, AuthService>(client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration["ApiSettings:BaseUrl"] ?? "http://localhost:5053");
+})
+.AddHttpMessageHandler<AuthHttpClientHandler>();
+
+// 7️⃣ TicketService - cu AuthHttpClientHandler
+builder.Services.AddHttpClient<ITicketService, TicketService>(client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration["ApiSettings:BaseUrl"] ?? "http://localhost:5053");
+})
+.AddHttpMessageHandler<AuthHttpClientHandler>();
 
 var app = builder.Build();
 
-// Configure pipeline
+// 8️⃣ Middleware
 if (!app.Environment.IsDevelopment())
 {
-    app.UseExceptionHandler("/Error");
+    app.UseExceptionHandler("/Error", createScopeForErrors: true);
     app.UseHsts();
 }
 
 app.UseStaticFiles();
+app.UseRouting();
+app.UseAuthorization();
 app.UseAntiforgery();
 
-app.UseAuthentication();     
-app.UseAuthorization();     
-
+// 9️⃣ Map Razor Components
 app.MapRazorComponents<App>()
-    .AddInteractiveServerRenderMode();
+    .AddInteractiveServerRenderMode()
+    .DisableAntiforgery();
 
 app.Run();

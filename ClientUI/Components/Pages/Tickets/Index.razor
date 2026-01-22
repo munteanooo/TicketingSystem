@@ -1,0 +1,81 @@
+﻿@page "/tickets"
+@attribute [Authorize]
+@inject ITicketService TicketService
+@inject NavigationManager Navigation
+@inject IAuthService AuthService
+@using ClientUI.Models
+@using ClientUI.Services.Interfaces
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Web
+@using MudBlazor
+
+<PageTitle>Tickete</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-5">
+    @if (isLoading)
+    {
+        <MudProgressCircular Size="Size.Large" Indeterminate="true" Class="mx-auto my-5" />
+    }
+    else if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <MudAlert Severity="Severity.Error">@errorMessage</MudAlert>
+    }
+    else if (tickets == null || !tickets.Any())
+    {
+        <MudText>Nu există tickete disponibile.</MudText>
+    }
+    else
+    {
+        <MudTable Items="tickets" Hover="true" Bordered="true" Striped="true" Elevation="2">
+            <HeaderContent>
+                <MudTh>Id</MudTh>
+                <MudTh>Descriere</MudTh>
+                <MudTh>Status</MudTh>
+                <MudTh>Creat la</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTr Style="cursor:pointer" @onclick="() => OpenDetails(context.Id)">
+                    <MudTd>@context.Id</MudTd>
+                    <MudTd>@context.Description</MudTd>
+                    <MudTd>@context.Status</MudTd>
+                    <MudTd>@context.CreatedAt.ToString("g")</MudTd>
+                </MudTr>
+            </RowTemplate>
+        </MudTable>
+    }
+</MudContainer>
+
+@code {
+    private List<TicketDto>? tickets;
+    private bool isLoading = true;
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            if (!await AuthService.IsAuthenticatedAsync())
+            {
+                Navigation.NavigateTo("/login", true);
+                return;
+            }
+
+            isLoading = true;
+
+            tickets = await TicketService.GetMyTicketsAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Eroare la încărcarea ticketelor: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void OpenDetails(Guid ticketId)
+    {
+        Navigation.NavigateTo($"/tickets/{ticketId}");
+    }
+}
