@@ -1,103 +1,60 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using TicketingSystem.Domain.Entities;
 
 namespace TicketingSystem.Infrastructure.Persistence
 {
-    /// <summary>
-    /// Entity Framework Core DbContext for TicketingSystem
-    /// Manages database connections and entity mappings
-    /// </summary>
-    public class TicketingSystemDbContext : DbContext
+    // Modificat pentru a suporta User custom și chei de tip Guid
+    public class TicketingSystemDbContext : IdentityDbContext<User, IdentityRole<Guid>, Guid>
     {
         public TicketingSystemDbContext(DbContextOptions<TicketingSystemDbContext> options)
-            : base(options)
-        {
-        }
+            : base(options) { }
 
-        #region DbSets
-        public DbSet<User> Users { get; set; } = null!;
-        public DbSet<Ticket> Tickets { get; set; } = null!;
-        public DbSet<TicketMessage> TicketMessages { get; set; } = null!;
-        #endregion
+        // DbSet-ul pentru User este deja inclus în IdentityDbContext sub numele 'Users'
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            // OBLIGATORIU: Apelează baza mai întâi pentru a configura tabelele de securitate
             base.OnModelCreating(modelBuilder);
 
-            // Configure User entity
             ConfigureUserEntity(modelBuilder);
-
-            // Configure Ticket entity
             ConfigureTicketEntity(modelBuilder);
-
-            // Configure TicketMessage entity
             ConfigureTicketMessageEntity(modelBuilder);
-
-            // Convert enums to strings
             ConfigureEnumConversions(modelBuilder);
         }
 
-        /// <summary>
-        /// Configure User entity mappings and relationships
-        /// </summary>
         private static void ConfigureUserEntity(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<User>(entity =>
             {
-                // Primary key
-                entity.HasKey(e => e.Id);
-
-                // Column configurations
-                entity.Property(e => e.Email)
-                    .IsRequired()
-                    .HasMaxLength(255);
+                // NOTĂ: Id, Email, PasswordHash, NormalizedEmail sunt configurate automat de Identity.
+                // Nu le re-configura manual decât dacă vrei să schimbi regulile implicite.
 
                 entity.Property(e => e.FullName)
                     .IsRequired()
                     .HasMaxLength(255);
 
-                entity.Property(e => e.PasswordHash)
-                    .IsRequired();
-
                 entity.Property(e => e.Role)
                     .IsRequired()
                     .HasMaxLength(50);
 
-                entity.Property(e => e.IsActive)
-                    .HasDefaultValue(true);
-
-                entity.Property(e => e.CreatedAt)
-                    .HasDefaultValueSql("CURRENT_TIMESTAMP");
-
-                // Indexes
-                entity.HasIndex(e => e.Email)
-                    .IsUnique();
-
-                // Relationships
+                // Relațiile rămân neschimbate
                 entity.HasMany(e => e.CreatedTickets)
                     .WithOne(t => t.Client)
                     .HasForeignKey(t => t.ClientId)
-                    .OnDelete(DeleteBehavior.Restrict)
-                    .HasConstraintName("FK_Tickets_Users_ClientId");
+                    .OnDelete(DeleteBehavior.Restrict);
 
                 entity.HasMany(e => e.AssignedTickets)
                     .WithOne(t => t.AssignedTechnician)
                     .HasForeignKey(t => t.AssignedTechnicianId)
-                    .OnDelete(DeleteBehavior.SetNull)
-                    .HasConstraintName("FK_Tickets_Users_TechnicianId");
-
-                entity.HasMany(e => e.Messages)
-                    .WithOne(m => m.Author)
-                    .HasForeignKey(m => m.AuthorId)
-                    .OnDelete(DeleteBehavior.Restrict)
-                    .HasConstraintName("FK_Messages_Users_AuthorId");
+                    .OnDelete(DeleteBehavior.SetNull);
             });
         }
-
-        /// <summary>
-        /// Configure Ticket entity mappings and relationships
-        /// </summary>
-        private static void ConfigureTicketEntity(ModelBuilder modelBuilder)
+/// <summary>
+/// Configure Ticket entity mappings and relationships
+/// </summary>
+private static void ConfigureTicketEntity(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<Ticket>(entity =>
             {

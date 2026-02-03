@@ -23,37 +23,30 @@ namespace TicketingSystem.Application.Tickets.Commands.AddMessage
 
         public async Task<AddMessageCommandResponseDto> Handle(AddMessageCommand request, CancellationToken cancellationToken)
         {
+            // 1. Verificăm dacă ticketul există
             var ticket = await _ticketRepository.GetByIdAsync(request.CommandDto.TicketId, cancellationToken);
             if (ticket == null)
                 throw NotFoundException.Create(nameof(Ticket), request.CommandDto.TicketId);
 
-            // Verify user is either the ticket owner or the assigned technician
-            if (ticket.ClientId.ToString() != _currentUser.UserId && ticket.AssignedTechnicianId?.ToString() != _currentUser.UserId)
+            // 2. Securitate: Doar posesorul sau tehnicianul pot scrie
+            var currentUserId = Guid.Parse(_currentUser.UserId!);
+            if (ticket.ClientId != currentUserId && ticket.AssignedTechnicianId != currentUserId)
                 throw ForbiddenException.InvalidOwner(nameof(Ticket));
 
-            var author = await _userRepository.GetByIdAsync(Guid.Parse(_currentUser.UserId!), cancellationToken);
-            if (author == null)
-                throw NotFoundException.Create(nameof(User), _currentUser.UserId!);
-
+            // 3. Creăm entitatea de mesaj
             var message = new TicketMessage
             {
                 Id = Guid.NewGuid(),
                 TicketId = ticket.Id,
+                AuthorId = currentUserId,
                 Content = request.CommandDto.Content,
-                AuthorId = author.Id,
-                CreatedAt = DateTime.UtcNow,
-                Ticket = ticket,
-                Author = author
+                CreatedAt = DateTime.UtcNow
             };
 
-            ticket.Messages.Add(message);
-            await _ticketRepository.UpdateAsync(ticket, cancellationToken);
+            // 4. Salvare directă (EVITĂM ticket.Messages.Add pentru a preveni Concurrency Error)
+            await _ticketRepository.AddMessageAsync(message, cancellationToken);
+            await _ticketRepository.SaveChangesAsync(cancellationToken);
 
-            return MapToDto(message);
-        }
-
-        private AddMessageCommandResponseDto MapToDto(TicketMessage message)
-        {
             return new AddMessageCommandResponseDto
             {
                 Id = message.Id,

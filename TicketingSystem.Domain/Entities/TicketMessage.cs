@@ -7,8 +7,7 @@
         public required string Content { get; set; }
         public required Guid AuthorId { get; set; }
         public required DateTime CreatedAt { get; set; }
-
-        public required Ticket Ticket { get; set; }
-        public required User Author { get; set; }
+        public Ticket Ticket { get; set; } = null!;
+        public User Author { get; set; } = null!;
     }
 }

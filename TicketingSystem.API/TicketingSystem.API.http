@@ -1,0 +1,14 @@
+﻿@TicketingSystem.API_Address = http://localhost:5114
+
+GET {{TicketingSystem.API_Address}}/api/users/technicians
+Accept: application/json
+
+POST {{TicketingSystem.API_Address}}/api/tickets
+Content-Type: application/json
+
+{
+  "title": "Problemă Imprimantă",
+  "description": "Nu mai printează color",
+  "priority": 1,
+  "clientId": "00000000-0000-0000-0000-000000000000"
+}
