@@ -22,5 +22,16 @@
         public DateTime? ClosedAt { get; set; }
         public DateTime? ReopenedAt { get; set; }
         public int MessageCount { get; set; }
+
+        public List<TicketMessageDto> Messages { get; set; } = new();
+    }
+
+    public class TicketMessageDto
+    {
+        public Guid Id { get; set; }
+        public string Content { get; set; } = string.Empty;
+        public Guid AuthorId { get; set; }
+        public string AuthorName { get; set; } = string.Empty;
+        public DateTime CreatedAt { get; set; }
     }
 }

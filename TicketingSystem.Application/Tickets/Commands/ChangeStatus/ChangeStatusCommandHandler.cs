@@ -2,7 +2,6 @@
 using TicketingSystem.Application.Contracts.Exceptions;
 using TicketingSystem.Application.Contracts.Interfaces;
 using TicketingSystem.Domain.Entities;
-using TicketingSystem.Domain.Enums;
 
 namespace TicketingSystem.Application.Tickets.Commands.ChangeStatus
 {
@@ -11,9 +10,7 @@ namespace TicketingSystem.Application.Tickets.Commands.ChangeStatus
         private readonly ITicketRepository _ticketRepository;
         private readonly ICurrentUser _currentUser;
 
-        public ChangeStatusCommandHandler(
-            ITicketRepository ticketRepository,
-            ICurrentUser currentUser)
+        public ChangeStatusCommandHandler(ITicketRepository ticketRepository, ICurrentUser currentUser)
         {
             _ticketRepository = ticketRepository;
             _currentUser = currentUser;
@@ -21,28 +18,34 @@ namespace TicketingSystem.Application.Tickets.Commands.ChangeStatus
 
         public async Task<ChangeStatusCommandResponseDto> Handle(ChangeStatusCommand request, CancellationToken cancellationToken)
         {
+            // 1. Recuperare tichet
             var ticket = await _ticketRepository.GetByIdAsync(request.CommandDto.TicketId, cancellationToken);
+
             if (ticket == null)
                 throw NotFoundException.Create(nameof(Ticket), request.CommandDto.TicketId);
 
-            // Verify user has permission to change status
+            // 2. Securitate: Doar tehnicianul alocat sau un Admin pot schimba statusul
             if (ticket.AssignedTechnicianId?.ToString() != _currentUser.UserId && !_currentUser.IsAdmin)
                 throw ForbiddenException.Create("change status", nameof(Ticket));
 
-            // Validate status enum
+            // 3. Validare format Status (Conversie din String în Enum)
             if (!Enum.TryParse<TicketStatus>(request.CommandDto.Status, true, out var newStatus))
-                throw new ArgumentException($"Invalid status: {request.CommandDto.Status}");
+                throw new ValidationException($"Statusul '{request.CommandDto.Status}' nu este valid.");
 
+            // 4. VALIDARE BUSINESS: Blocăm "In Progress" dacă nu există un tehnician alocat
+            if (newStatus == TicketStatus.InProgress && ticket.AssignedTechnicianId == null)
+            {
+                // Folosim o excepție de tip BadRequest/Validation pentru a fi prinsă de Middleware
+                throw new ValidationException("Tichetul trebuie să fie alocat unui tehnician înainte de a fi trecut în 'In Progress'.");
+            }
+
+            // 5. Aplicare modificări
             ticket.Status = newStatus;
             ticket.UpdatedAt = DateTime.UtcNow;
 
             await _ticketRepository.UpdateAsync(ticket, cancellationToken);
 
-            return MapToDto(ticket);
-        }
-
-        private ChangeStatusCommandResponseDto MapToDto(Ticket ticket)
-        {
+            // 6. Returnare răspuns
             return new ChangeStatusCommandResponseDto
             {
                 Id = ticket.Id,

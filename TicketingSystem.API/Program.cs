@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using TicketingSystem.API.Middleware;
 using TicketingSystem.Application.Contracts;
 using TicketingSystem.Domain.Entities;
 using TicketingSystem.Infrastructure;
@@ -15,14 +16,14 @@ builder.Services
     .AddApplication()
     .AddInfrastructure(builder.Configuration);
 
-// 2. Configurare Identity (Mutată înaintea Auth pentru siguranță)
+// 2. Configurare Identity
 builder.Services.AddIdentity<User, IdentityRole<Guid>>(options =>
 {
     options.Password.RequireDigit = false;
     options.Password.RequiredLength = 6;
     options.Password.RequireNonAlphanumeric = false;
     options.Password.RequireUppercase = false;
-    options.Password.RequireLowercase = false; // Mai relaxat pentru testare
+    options.Password.RequireLowercase = false;
 })
 .AddEntityFrameworkStores<TicketingSystemDbContext>()
 .AddDefaultTokenProviders();
@@ -36,9 +37,8 @@ builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme; 
+    options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
 })
-
 .AddJwtBearer(options =>
 {
     options.TokenValidationParameters = new TokenValidationParameters
@@ -49,7 +49,7 @@ builder.Services.AddAuthentication(options =>
         ValidateAudience = true,
         ValidIssuer = jwtSettings["Issuer"],
         ValidAudience = jwtSettings["Audience"],
-        ClockSkew = TimeSpan.FromMinutes(5) 
+        ClockSkew = TimeSpan.FromMinutes(5)
     };
 });
 
@@ -65,7 +65,7 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// --- 4. SEED DATA (Rezolvă problema ta cu Adminul) ---
+// --- 4. SEED DATA ---
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
@@ -74,7 +74,6 @@ using (var scope = app.Services.CreateScope())
         var userManager = services.GetRequiredService<UserManager<User>>();
         var context = services.GetRequiredService<TicketingSystemDbContext>();
 
-        // Aplică migrările automat la pornire (opțional, dar recomandat în dev)
         await context.Database.MigrateAsync();
 
         var adminEmail = "admin@test.com";
@@ -108,16 +107,22 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-// 5. Middleware Pipeline
+// --- 5. Middleware Pipeline ---
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
+// Înregistrăm Middleware-ul de excepții chiar la începutul pipeline-ului
+// pentru a "supraveghea" tot ce trece prin el.
+app.UseMiddleware<ExceptionHandlingMiddleware>();
+
 app.UseHttpsRedirection();
 app.UseCors("AllowAll");
 
+// Autentificarea trebuie să fie înaintea Autorizării
 app.UseAuthentication();
 app.UseAuthorization();
 
