@@ -11,12 +11,11 @@ using TicketingSystem.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. Dependency Injection
-builder.Services
-    .AddApplication()
-    .AddInfrastructure(builder.Configuration);
+// --- 1. Servicii din Core/Infrastructure ---
+builder.Services.AddApplication();
+builder.Services.AddInfrastructure(builder.Configuration);
 
-// 2. Configurare Identity
+// --- 2. Identity ---
 builder.Services.AddIdentity<User, IdentityRole<Guid>>(options =>
 {
     options.Password.RequireDigit = false;
@@ -28,7 +27,7 @@ builder.Services.AddIdentity<User, IdentityRole<Guid>>(options =>
 .AddEntityFrameworkStores<TicketingSystemDbContext>()
 .AddDefaultTokenProviders();
 
-// 3. Configurare JWT
+// --- 3. Autentificare JWT ---
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
 var secretKey = jwtSettings["Key"] ?? "O_Cheie_Super_Secreta_Si_Lunga_De_32_Caractere";
 var key = Encoding.ASCII.GetBytes(secretKey);
@@ -37,7 +36,6 @@ builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
 })
 .AddJwtBearer(options =>
 {
@@ -49,33 +47,36 @@ builder.Services.AddAuthentication(options =>
         ValidateAudience = true,
         ValidIssuer = jwtSettings["Issuer"],
         ValidAudience = jwtSettings["Audience"],
-        ClockSkew = TimeSpan.FromMinutes(5)
+        ClockSkew = TimeSpan.Zero // Setați la zero pentru testare precisă
     };
+});
+
+// --- 4. CORS (Permitem accesul de la portul Blazor: 7119) ---
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("BlazorPolicy", policy =>
+        policy.WithOrigins("https://localhost:7119")
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials());
 });
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowAll", policy =>
-        policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
-});
-
 var app = builder.Build();
 
-// --- 4. SEED DATA ---
+// --- 5. SEED DATA & MIGRATIONS ---
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
     try
     {
-        var userManager = services.GetRequiredService<UserManager<User>>();
         var context = services.GetRequiredService<TicketingSystemDbContext>();
-
         await context.Database.MigrateAsync();
 
+        var userManager = services.GetRequiredService<UserManager<User>>();
         var adminEmail = "admin@test.com";
         var adminUser = await userManager.FindByEmailAsync(adminEmail);
 
@@ -83,6 +84,7 @@ using (var scope = app.Services.CreateScope())
         {
             var newAdmin = new User
             {
+                Id = Guid.NewGuid(),
                 UserName = adminEmail,
                 Email = adminEmail,
                 FullName = "Admin System",
@@ -90,45 +92,32 @@ using (var scope = app.Services.CreateScope())
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow
             };
-
-            var result = await userManager.CreateAsync(newAdmin, "Password123!");
-            if (result.Succeeded) Console.WriteLine("--> Admin creat cu succes (Parola: Password123!)");
-        }
-        else
-        {
-            var token = await userManager.GeneratePasswordResetTokenAsync(adminUser);
-            await userManager.ResetPasswordAsync(adminUser, token, "Password123!");
-            Console.WriteLine("--> Parola adminului a fost resetată pentru validitate.");
+            await userManager.CreateAsync(newAdmin, "Password123!");
+            Console.WriteLine("--> Admin creat: admin@test.com / Password123!");
         }
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"--> Eroare la Seed: {ex.Message}");
+        Console.WriteLine($"--> Eroare Seed: {ex.Message}");
     }
 }
 
-// --- 5. Middleware Pipeline ---
-
+// --- 6. Pipeline Middleware ---
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-// Înregistrăm Middleware-ul de excepții chiar la începutul pipeline-ului
-// pentru a "supraveghea" tot ce trece prin el.
 app.UseMiddleware<ExceptionHandlingMiddleware>();
-
 app.UseHttpsRedirection();
-app.UseCors("AllowAll");
 
-// Autentificarea trebuie să fie înaintea Autorizării
+// UseCors trebuie să fie ÎNAINTE de Authentication
+app.UseCors("BlazorPolicy");
+
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
-
-var logger = app.Services.GetRequiredService<ILogger<Program>>();
-logger.LogInformation("--- Ticketing System API a pornit cu succes ---");
 
 app.Run();

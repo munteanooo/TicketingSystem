@@ -1,0 +1,17 @@
+﻿<AuthorizeView>
+    <Authorized>
+        <span class="me-2 text-white">Salut, @context.User.Identity?.Name!</span>
+        <button class="btn btn-outline-light btn-sm" @onclick="HandleLogout">Logout</button>
+    </Authorized>
+</AuthorizeView>
+
+@code {
+    @inject AuthService AuthService
+    @inject NavigationManager Nav
+
+    private async Task HandleLogout()
+    {
+        await AuthService.Logout();
+        Nav.NavigateTo("/login");
+    }
+}

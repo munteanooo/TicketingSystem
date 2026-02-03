@@ -1,0 +1,17 @@
+﻿@page "/"
+
+<div class="text-center mt-5">
+    <h1>Bine ai venit la Ticketing System</h1>
+    <p class="lead">Gestionează tichetele tale rapid și eficient.</p>
+    <hr />
+
+    <AuthorizeView>
+        <Authorized>
+            <a href="/tickets" class="btn btn-primary btn-lg">Vezi Tichetele Mele</a>
+        </Authorized>
+        <NotAuthorized>
+            <a href="/login" class="btn btn-outline-primary btn-lg">Autentificare</a>
+            <a href="/register" class="btn btn-success btn-lg">Înregistrare</a>
+        </NotAuthorized>
+    </AuthorizeView>
+</div>
