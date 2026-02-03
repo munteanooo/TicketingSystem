@@ -1,0 +1,85 @@
+﻿@page "/tickets"
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using TicketingSystem.Blazor.Services
+@using TicketingSystem.Domain.Entities
+@attribute [Authorize]
+@inject TicketService TicketService
+
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3><i class="bi bi-ticket-perforated"></i> Tichetele Mele</h3>
+        <button class="btn btn-primary">Tichet Nou</button>
+    </div>
+
+    @if (tickets == null)
+    {
+        <div class="text-center">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p>Se încarcă tichetele...</p>
+        </div>
+    }
+    else if (!tickets.Any())
+    {
+        <div class="alert alert-info">Nu ai niciun tichet creat până acum.</div>
+    }
+    else
+    {
+        <div class="card shadow-sm">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Număr</th>
+                            <th>Titlu</th>
+                            <th>Prioritate</th>
+                            <th>Status</th>
+                            <th>Creat la</th>
+                            <th>Acțiuni</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var ticket in tickets)
+                        {
+                            <tr>
+                                <td class="fw-bold">@ticket.TicketNumber</td>
+                                <td>@ticket.Title</td>
+                                <td>@GetPriorityBadge(ticket.Priority)</td>
+                                <td>@GetStatusBadge(ticket.Status)</td>
+                                <td>@ticket.CreatedAt.ToString("dd.MM.yyyy HH:mm")</td>
+                                <td>
+                                    <a href="/tickets/@ticket.Id" class="btn btn-sm btn-outline-secondary">Detalii</a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private List<Ticket>? tickets;
+
+    protected override async Task OnInitializedAsync()
+    {
+        tickets = await TicketService.GetAllTickets();
+    }
+
+    private RenderFragment GetPriorityBadge(TicketPriority priority) => priority switch
+    {
+        TicketPriority.Low => @<span class="badge bg-info text-dark">Scăzută</span>,
+        TicketPriority.Medium => @<span class="badge bg-warning text-dark">Medie</span>,
+        TicketPriority.High => @<span class="badge bg-danger">Ridicată</span>,
+        _ => @<span class="badge bg-secondary">Nespecificat</span>
+    };
+
+    private RenderFragment GetStatusBadge(TicketStatus status) => status switch
+    {
+        TicketStatus.Open => @<span class="badge rounded-pill bg-success">Deschis</span>,
+        TicketStatus.InProgress => @<span class="badge rounded-pill bg-primary">În Lucru</span>,
+        TicketStatus.Closed => @<span class="badge rounded-pill bg-secondary">Închis</span>,
+        _ => @<span class="badge rounded-pill bg-dark">@status</span>
+    };
+}

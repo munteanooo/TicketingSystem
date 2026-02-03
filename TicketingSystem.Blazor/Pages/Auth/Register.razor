@@ -1,0 +1,95 @@
+﻿@page "/register"
+@using TicketingSystem.Blazor.Services
+@inject AuthService AuthService
+@inject NavigationManager Nav
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-4">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white text-center">
+                    <h4>Cont Nou</h4>
+                </div>
+                <div class="card-body">
+                    @if (!string.IsNullOrEmpty(errorMessage))
+                    {
+                        <div class="alert alert-danger p-2 small">@errorMessage</div>
+                    }
+
+                    <div class="mb-2">
+                        <label class="form-label small">Nume Complet</label>
+                        <input @bind="fullName" class="form-control" placeholder="Ion Popescu" />
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label small">Email</label>
+                        <input @bind="email" class="form-control" placeholder="email@exemplu.com" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small">Parolă</label>
+                        <input @bind="password" type="password" class="form-control" placeholder="******" />
+                    </div>
+
+                    <button class="btn btn-success w-100" @onclick="HandleRegister" disabled="@isProcessing">
+                        @if (isProcessing)
+                        {
+                            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                        }
+                        else
+                        {
+                            <span>Creează Cont</span>
+                        }
+                    </button>
+
+                    <div class="mt-3 text-center">
+                        <span class="small">Ai deja cont?</span> <a href="/login" class="small">Loghează-te</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string fullName = "";
+    private string email = "";
+    private string password = "";
+    private string errorMessage = "";
+    private bool isProcessing = false;
+
+    private async Task HandleRegister()
+    {
+        if (string.IsNullOrWhiteSpace(fullName) || string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+        {
+            errorMessage = "Toate câmpurile sunt obligatorii!";
+            return;
+        }
+
+        errorMessage = "";
+        isProcessing = true;
+
+        try
+        {
+            bool isSuccess = await AuthService.Register(fullName, email, password);
+
+            if (isSuccess)
+            {
+                Nav.NavigateTo("/login");
+            }
+            else
+            {
+                errorMessage = "Înregistrarea a eșuat. Email-ul ar putea fi deja utilizat.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Eroare la server. Încearcă mai târziu.";
+            Console.WriteLine(ex.Message);
+        }
+        finally
+        {
+            isProcessing = false;
+        }
+    }
+}
