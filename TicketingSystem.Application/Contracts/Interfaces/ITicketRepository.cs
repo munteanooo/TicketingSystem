@@ -1,5 +1,4 @@
 ﻿using TicketingSystem.Domain.Entities;
-using TicketingSystem.Domain.Enums;
 
 namespace TicketingSystem.Application.Contracts.Interfaces
 {
