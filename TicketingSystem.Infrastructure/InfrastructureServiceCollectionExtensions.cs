@@ -4,22 +4,12 @@ using Microsoft.Extensions.DependencyInjection;
 using TicketingSystem.Application.Contracts.Interfaces;
 using TicketingSystem.Infrastructure.Persistence;
 using TicketingSystem.Infrastructure.Persistence.Repositories;
+using TicketingSystem.Infrastructure.Services; 
 
 namespace TicketingSystem.Infrastructure
 {
-    /// <summary>
-    /// Extension methods for registering Infrastructure services in the DI container
-    /// Called from Program.cs to register all infrastructure dependencies
-    /// </summary>
     public static class InfrastructureServiceCollectionExtensions
     {
-        /// <summary>
-        /// Add Infrastructure services to the DI container
-        /// This includes DbContext, Repositories, and PostgreSQL configuration
-        /// 
-        /// Usage in Program.cs:
-        /// builder.Services.AddInfrastructure(builder.Configuration);
-        /// </summary>
         public static IServiceCollection AddInfrastructure(
             this IServiceCollection services,
             IConfiguration configuration)
@@ -30,82 +20,55 @@ namespace TicketingSystem.Infrastructure
             if (configuration == null)
                 throw new ArgumentNullException(nameof(configuration));
 
-            // Get connection string from configuration
             var connectionString = configuration.GetConnectionString("DefaultConnection");
             if (string.IsNullOrWhiteSpace(connectionString))
                 throw new InvalidOperationException(
-                    "Connection string 'DefaultConnection' not found in configuration. " +
-                    "Ensure appsettings.json contains the connection string.");
+                    "Connection string 'DefaultConnection' not found in configuration.");
 
-            // Register DbContext with PostgreSQL provider
+            // 1. Configurare DbContext
             RegisterDbContext(services, connectionString);
 
-            // Register Repositories
+            // 2. Configurare Infrastructură Web (Esențial pentru ICurrentUser)
+            services.AddHttpContextAccessor();
+            services.AddScoped<ICurrentUser, CurrentUserService>();
+
+            // 3. Înregistrare Repositories
             RegisterRepositories(services);
 
             return services;
         }
 
-        /// <summary>
-        /// Register the DbContext with PostgreSQL provider
-        /// Configures connection pooling and retry policy for resilience
-        /// </summary>
         private static void RegisterDbContext(IServiceCollection services, string connectionString)
         {
             services.AddDbContext<TicketingSystemDbContext>(options =>
             {
                 options.UseNpgsql(connectionString, npgsqlOptions =>
                 {
-                    // Specify the assembly containing migrations
                     npgsqlOptions.MigrationsAssembly("TicketingSystem.Infrastructure");
-
-                    // Enable retry on failure for transient database errors
                     npgsqlOptions.EnableRetryOnFailure(
-                        maxRetryCount: 3,                          // Retry up to 3 times
-                        maxRetryDelay: TimeSpan.FromSeconds(5),                   // Wait up to 5 seconds between retries
-                        errorCodesToAdd: null);                    // Add custom error codes if needed
+                        maxRetryCount: 3,
+                        maxRetryDelay: TimeSpan.FromSeconds(5),
+                        errorCodesToAdd: null);
 
-                    // Configure command timeout
-                    npgsqlOptions.CommandTimeout(30);             // 30 second timeout per command
-
-                    // Enable connection resilience
-                    npgsqlOptions.UseRelationalNulls();           // Use SQL NULL semantics
+                    npgsqlOptions.CommandTimeout(30);
                 });
 
-                // Enable lazy loading of navigation properties (optional)
-                // options.UseLazyLoadingProxies();
-
-                // Configure query behavior in development
 #if DEBUG
-                options.EnableDetailedErrors();                   // More detailed error messages
-                options.EnableSensitiveDataLogging();             // Log sensitive data (passwords, etc.) - DEVELOPMENT ONLY!
+                options.EnableDetailedErrors();
+                options.EnableSensitiveDataLogging();
 #endif
             });
 
-            // Register the DbContext for explicit dependency injection
+            // Permite injectarea bazei de date ca DbContext generic dacă este nevoie
             services.AddScoped<DbContext>(provider => provider.GetRequiredService<TicketingSystemDbContext>());
         }
 
-        /// <summary>
-        /// Register all repository implementations in the DI container
-        /// Each repository interface is mapped to its implementation
-        /// Scoped lifetime ensures a new instance per request/scope
-        /// </summary>
         private static void RegisterRepositories(IServiceCollection services)
         {
-            // Register Ticket Repository
-            services.AddScoped<ITicketRepository, TicketRepository>(provider =>
-            {
-                var context = provider.GetRequiredService<TicketingSystemDbContext>();
-                return new TicketRepository(context);
-            });
-
-            // Register User Repository
-            services.AddScoped<IUserRepository, UserRepository>(provider =>
-            {
-                var context = provider.GetRequiredService<TicketingSystemDbContext>();
-                return new UserRepository(context);
-            });
+            // Înregistrare simplificată (nu este nevoie de factory function dacă constructorul este simplu)
+            // .NET DI va rezolva automat TicketingSystemDbContext în constructorul repository-ului
+            services.AddScoped<ITicketRepository, TicketRepository>();
+            services.AddScoped<IUserRepository, UserRepository>();
         }
     }
 }

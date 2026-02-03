@@ -2,7 +2,8 @@
 {
     public class AddMessageCommandDto
     {
-        public required Guid TicketId { get; set; }
+        public Guid TicketId { get; set; }
+        public Guid AuthorId { get; set; }
         public required string Content { get; set; }
     }
 }

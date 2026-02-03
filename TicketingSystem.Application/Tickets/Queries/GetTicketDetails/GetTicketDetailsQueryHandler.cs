@@ -21,10 +21,11 @@ namespace TicketingSystem.Application.Tickets.Queries.GetTicketDetails
         public async Task<GetTicketDetailsQueryResponseDto> Handle(GetTicketDetailsQuery request, CancellationToken cancellationToken)
         {
             var ticket = await _ticketRepository.GetByIdAsync(request.TicketId, cancellationToken);
+
             if (ticket == null)
                 throw NotFoundException.Create(nameof(Ticket), request.TicketId);
 
-            // Verify user has access: either ticket owner, assigned technician, or admin
+            // Verificare permisiuni: doar proprietarul, tehnicianul alocat sau adminul
             if (ticket.ClientId.ToString() != _currentUser.UserId
                 && ticket.AssignedTechnicianId?.ToString() != _currentUser.UserId
                 && !_currentUser.IsAdmin)
@@ -56,7 +57,18 @@ namespace TicketingSystem.Application.Tickets.Queries.GetTicketDetails
                 AssignedAt = ticket.AssignedAt,
                 ClosedAt = ticket.ClosedAt,
                 ReopenedAt = ticket.ReopenedAt,
-                MessageCount = ticket.Messages?.Count ?? 0
+                MessageCount = ticket.Messages?.Count ?? 0,
+
+                Messages = ticket.Messages?
+                    .OrderBy(m => m.CreatedAt) 
+                    .Select(m => new TicketMessageDto
+                    {
+                        Id = m.Id,
+                        Content = m.Content,
+                        AuthorId = m.AuthorId,
+                        AuthorName = m.Author?.FullName ?? "Utilizator Sistem", 
+                        CreatedAt = m.CreatedAt
+                    }).ToList() ?? new List<TicketMessageDto>()
             };
         }
     }
