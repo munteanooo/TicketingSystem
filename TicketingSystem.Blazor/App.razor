@@ -3,15 +3,38 @@
         <Found Context="routeData">
             <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)">
                 <NotAuthorized>
-                    <p>Ne pare rău, nu ești autorizat să vezi această pagină. Te rugăm să te loghezi.</p>
-                    <LoginForm /> @* Sau redirecționare către "/" *@
+                    @if (context.User.Identity?.IsAuthenticated != true)
+                    {
+                        @* Utilizatorul nu este logat delose - Trimitem la Login *@
+                        <RedirectToLogin />
+                    }
+                    else
+                    {
+                        @* Utilizatorul e logat dar nu are Rolul necesar (ex: Client vrea la Admin) *@
+                        <div class="container mt-5">
+                            <div class="alert alert-danger shadow border-start border-5 border-danger">
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-exclamation-octagon-fill fs-2 me-3"></i>
+                                    <div>
+                                        <h4 class="alert-heading">Acces Interzis</h4>
+                                        <p>Nu aveți permisiunile necesare pentru a vizualiza această pagină.</p>
+                                    </div>
+                                </div>
+                                <hr>
+                                <a href="/" class="btn btn-danger">Înapoi la Acasă</a>
+                            </div>
+                        </div>
+                    }
                 </NotAuthorized>
             </AuthorizeRouteView>
-            <FocusOnNavigate RouteData="@routeData" Selector="h1" />
         </Found>
         <NotFound>
             <LayoutView Layout="@typeof(MainLayout)">
-                <p role="alert">Pagina nu a fost găsită.</p>
+                <div class="container mt-5 text-center">
+                    <h1 class="display-1 fw-bold">404</h1>
+                    <p class="h3">Pagina nu a fost găsită.</p>
+                    <a href="/" class="btn btn-primary mt-3">Mergi la Acasă</a>
+                </div>
             </LayoutView>
         </NotFound>
     </Router>

@@ -1,17 +1,17 @@
-﻿<AuthorizeView>
-    <Authorized>
-        <span class="me-2 text-white">Salut, @context.User.Identity?.Name!</span>
-        <button class="btn btn-outline-light btn-sm" @onclick="HandleLogout">Logout</button>
-    </Authorized>
-</AuthorizeView>
+﻿@inherits LayoutComponentBase
 
-@code {
-    @inject AuthService AuthService
-    @inject NavigationManager Nav
+<MudThemeProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
 
-    private async Task HandleLogout()
-    {
-        await AuthService.Logout();
-        Nav.NavigateTo("/login");
-    }
-}
+<MudLayout>
+    <MudAppBar Elevation="1">
+        <MudText Typo="Typo.h5" Class="ml-3">Ticketing System</MudText>
+    </MudAppBar>
+
+    <MudMainContent>
+        <MudContainer MaxWidth="MaxWidth.Large" Class="my-4">
+            @Body  
+        </MudContainer>
+    </MudMainContent>
+</MudLayout>

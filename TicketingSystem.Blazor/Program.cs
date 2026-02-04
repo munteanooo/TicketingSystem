@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
+using MudBlazor.Services; // Adăugat pentru MudBlazor
 using TicketingSystem.Blazor;
 using TicketingSystem.Blazor.Services;
 
@@ -12,13 +13,17 @@ builder.RootComponents.Add<HeadOutlet>("head::after");
 // --- 1. Stocare Locală ---
 builder.Services.AddBlazoredLocalStorage();
 
-// --- 2. Autentificare & Autorizare ---
+// --- 2. MudBlazor Services ---
+// Această linie înregistrează DialogService, Snackbar, etc.
+builder.Services.AddMudServices();
+
+// --- 3. Autentificare & Autorizare ---
 builder.Services.AddAuthorizationCore();
 builder.Services.AddScoped<ApiAuthenticationStateProvider>();
 builder.Services.AddScoped<AuthenticationStateProvider>(sp =>
     sp.GetRequiredService<ApiAuthenticationStateProvider>());
 
-// --- 3. Servicii Infastructură HTTP ---
+// --- 4. Servicii Infastructură HTTP ---
 builder.Services.AddScoped<JwtInterceptor>();
 
 // Configurare Client HTTP principal cu Interceptor
@@ -32,7 +37,7 @@ builder.Services.AddHttpClient("TicketingAPI", client =>
 builder.Services.AddScoped(sp =>
     sp.GetRequiredService<IHttpClientFactory>().CreateClient("TicketingAPI"));
 
-// --- 4. Servicii de Business ---
+// --- 5. Servicii de Business ---
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<TicketService>();
 

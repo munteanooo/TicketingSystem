@@ -1,9 +1,9 @@
-﻿using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
+﻿using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
 using TicketingSystem.Domain.Entities;
 
 namespace TicketingSystem.API.Controllers
@@ -13,7 +13,7 @@ namespace TicketingSystem.API.Controllers
     public class AuthController : ControllerBase
     {
         private readonly UserManager<User> _userManager;
-        private readonly IConfiguration _configuration; 
+        private readonly IConfiguration _configuration;
 
         public AuthController(UserManager<User> userManager, IConfiguration configuration)
         {
@@ -34,7 +34,7 @@ namespace TicketingSystem.API.Controllers
                     new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                     new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                     new Claim("FullName", user.FullName),
-                    new Claim(ClaimTypes.Role, user.Role) 
+                    new Claim(ClaimTypes.Role, user.Role)
                 };
 
                 var authSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JwtSettings:Key"]!));
@@ -61,24 +61,30 @@ namespace TicketingSystem.API.Controllers
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterDto model)
         {
-            // Verificăm dacă userul există deja
             var userExists = await _userManager.FindByEmailAsync(model.Email);
             if (userExists != null)
                 return BadRequest(new { Message = "Utilizatorul există deja!" });
+
+            // Validăm rolul: dacă e null sau gol, punem default "Client"
+            var userRole = string.IsNullOrWhiteSpace(model.Role) ? "Client" : model.Role;
 
             var user = new User
             {
                 UserName = model.Email,
                 Email = model.Email,
                 FullName = model.FullName,
-                Role = "Client",
-                CreatedAt = DateTime.UtcNow
+                Role = userRole, // Folosim rolul primit din DTO
+                CreatedAt = DateTime.UtcNow,
+                EmailConfirmed = true // Setăm pe true pentru a evita probleme de confirmare la testare
             };
 
             var result = await _userManager.CreateAsync(user, model.Password);
 
             if (result.Succeeded)
             {
+                // Opțional: Dacă folosești și sistemul de Roluri clasic din Identity:
+                // await _userManager.AddToRoleAsync(user, userRole);
+
                 return Ok(new { Message = "User created successfully" });
             }
 
@@ -86,6 +92,7 @@ namespace TicketingSystem.API.Controllers
         }
     }
 
+    // DTO-uri actualizate
     public record LoginDto(string Email, string Password);
-    public record RegisterDto(string Email, string Password, string FullName);
+    public record RegisterDto(string Email, string Password, string FullName, string Role);
 }

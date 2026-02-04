@@ -1,6 +1,5 @@
 ﻿using Blazored.LocalStorage;
 using Microsoft.AspNetCore.Components.Authorization;
-using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Text.Json;
 
@@ -8,32 +7,33 @@ namespace TicketingSystem.Blazor.Services;
 
 public class ApiAuthenticationStateProvider : AuthenticationStateProvider
 {
-    private readonly HttpClient _httpClient;
     private readonly ILocalStorageService _localStorage;
 
-    public ApiAuthenticationStateProvider(HttpClient httpClient, ILocalStorageService localStorage)
+    public ApiAuthenticationStateProvider(ILocalStorageService localStorage)
     {
-        _httpClient = httpClient;
         _localStorage = localStorage;
     }
 
     public override async Task<AuthenticationState> GetAuthenticationStateAsync()
     {
-        var savedToken = await _localStorage.GetItemAsync<string>("authToken");
+        var savedToken = await _localStorage.GetItemAsStringAsync("authToken");
 
         if (string.IsNullOrWhiteSpace(savedToken))
         {
             return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
         }
 
-        _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("bearer", savedToken);
+        var token = savedToken.Trim('"');
+        var claims = ParseClaimsFromJwt(token);
+        var user = new ClaimsPrincipal(new ClaimsIdentity(claims, "jwt"));
 
-        return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity(ParseClaimsFromJwt(savedToken), "jwt")));
+        return new AuthenticationState(user);
     }
 
-    public void MarkUserAsAuthenticated(string email)
+    public void MarkUserAsAuthenticated(string token)
     {
-        var authenticatedUser = new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim(ClaimTypes.Name, email) }, "jwt"));
+        var claims = ParseClaimsFromJwt(token.Trim('"'));
+        var authenticatedUser = new ClaimsPrincipal(new ClaimsIdentity(claims, "jwt"));
         var authState = Task.FromResult(new AuthenticationState(authenticatedUser));
         NotifyAuthenticationStateChanged(authState);
     }
@@ -50,7 +50,11 @@ public class ApiAuthenticationStateProvider : AuthenticationStateProvider
         var payload = jwt.Split('.')[1];
         var jsonBytes = ParseBase64WithoutPadding(payload);
         var keyValuePairs = JsonSerializer.Deserialize<Dictionary<string, object>>(jsonBytes);
-        return keyValuePairs!.Select(kvp => new Claim(kvp.Key, kvp.Value.ToString()!));
+
+        return keyValuePairs!.Select(kvp =>
+            new Claim(kvp.Key == "http://schemas.microsoft.com/ws/2008/06/identity/claims/role" ? ClaimTypes.Role :
+                      kvp.Key == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name" ? ClaimTypes.Name : kvp.Key,
+                      kvp.Value.ToString()!));
     }
 
     private byte[] ParseBase64WithoutPadding(string base64)

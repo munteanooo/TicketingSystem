@@ -1,0 +1,49 @@
+﻿<div class="nav-scrollable" onclick="OnNavLinkClick">
+    <nav class="flex-column">
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                <span class="bi bi-house-door-fill" aria-hidden="true"></span> Acasă
+            </NavLink>
+        </div>
+
+        @* Secțiune vizibilă doar pentru cei LOGAȚI *@
+        <AuthorizeView>
+            <Authorized>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="my-tickets">
+                        <span class="bi bi-ticket-detailed-fill" aria-hidden="true"></span> Tichetele Mele
+                    </NavLink>
+                </div>
+
+                @* Secțiune vizibilă DOAR pentru ADMIN *@
+                <AuthorizeView Roles="Admin">
+                    <div class="nav-item px-3">
+                        <NavLink class="nav-link" href="admin/tickets">
+                            <span class="bi bi-shield-lock-fill" aria-hidden="true"></span> Gestionare Toate Tichetele
+                        </NavLink>
+                    </div>
+                </AuthorizeView>
+
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="logout">
+                        <span class="bi bi-door-closed-fill" aria-hidden="true"></span> Logout (@context.User.Identity?.Name)
+                    </NavLink>
+                </div>
+            </Authorized>
+
+            @* Secțiune vizibilă doar pentru vizitatori (NE-LOGAȚI) *@
+            <NotAuthorized>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="login">
+                        <span class="bi bi-person-badge-fill" aria-hidden="true"></span> Login
+                    </NavLink>
+                </div>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="register">
+                        <span class="bi bi-person-plus-fill" aria-hidden="true"></span> Creare Cont
+                    </NavLink>
+                </div>
+            </NotAuthorized>
+        </AuthorizeView>
+    </nav>
+</div>
