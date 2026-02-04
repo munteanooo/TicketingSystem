@@ -6,35 +6,36 @@
 <div class="container mt-5">
     <div class="row justify-content-center">
         <div class="col-md-4">
-            <div class="card shadow">
+            <div class="card shadow border-0">
                 <div class="card-header bg-success text-white text-center">
-                    <h4>Cont Nou</h4>
+                    <h4 class="mb-0">Cont Nou</h4>
                 </div>
-                <div class="card-body">
+                <div class="card-body p-4">
                     @if (!string.IsNullOrEmpty(errorMessage))
                     {
                         <div class="alert alert-danger p-2 small">@errorMessage</div>
                     }
 
-                    <div class="mb-2">
-                        <label class="form-label small">Nume Complet</label>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Nume Complet</label>
                         <input @bind="fullName" class="form-control" placeholder="Ion Popescu" />
                     </div>
 
-                    <div class="mb-2">
-                        <label class="form-label small">Email</label>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Email</label>
                         <input @bind="email" class="form-control" placeholder="email@exemplu.com" />
                     </div>
 
-                    <div class="mb-3">
-                        <label class="form-label small">Parolă</label>
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold">Parolă</label>
                         <input @bind="password" type="password" class="form-control" placeholder="******" />
                     </div>
 
-                    <button class="btn btn-success w-100" @onclick="HandleRegister" disabled="@isProcessing">
+                    <button class="btn btn-success w-100 py-2" @onclick="HandleRegister" disabled="@isProcessing">
                         @if (isProcessing)
                         {
                             <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                            <span class="ms-2">Se procesează...</span>
                         }
                         else
                         {
@@ -43,7 +44,7 @@
                     </button>
 
                     <div class="mt-3 text-center">
-                        <span class="small">Ai deja cont?</span> <a href="/login" class="small">Loghează-te</a>
+                        <span class="small text-muted">Ai deja cont?</span> <a href="/login" class="small text-success fw-bold">Loghează-te</a>
                     </div>
                 </div>
             </div>
@@ -71,7 +72,10 @@
 
         try
         {
-            bool isSuccess = await AuthService.Register(fullName, email, password);
+            // Determinam rolul: Daca email-ul e cel de admin, trimitem rol de Admin
+            string assignedRole = email.ToLower().Contains("admin") ? "Admin" : "Client";
+
+            bool isSuccess = await AuthService.Register(fullName, email, password, assignedRole);
 
             if (isSuccess)
             {
@@ -79,13 +83,13 @@
             }
             else
             {
-                errorMessage = "Înregistrarea a eșuat. Email-ul ar putea fi deja utilizat.";
+                errorMessage = "Înregistrarea a eșuat. Verificați datele sau dacă email-ul există deja.";
             }
         }
         catch (Exception ex)
         {
-            errorMessage = "Eroare la server. Încearcă mai târziu.";
-            Console.WriteLine(ex.Message);
+            errorMessage = "Eroare de conexiune la server.";
+            Console.WriteLine($"Register Error: {ex.Message}");
         }
         finally
         {

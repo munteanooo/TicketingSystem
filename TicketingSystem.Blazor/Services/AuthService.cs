@@ -42,9 +42,16 @@ public class AuthService
         return false;
     }
 
-    public async Task<bool> Register(string fullName, string email, string password)
+    // Am adaugat parametrul role (default "Client")
+    public async Task<bool> Register(string fullName, string email, string password, string role = "Client")
     {
-        var registerRequest = new { FullName = fullName, Email = email, Password = password };
+        var registerRequest = new
+        {
+            FullName = fullName,
+            Email = email,
+            Password = password,
+            Role = role
+        };
         var response = await _httpClient.PostAsJsonAsync("api/auth/register", registerRequest);
         return response.IsSuccessStatusCode;
     }

@@ -1,7 +1,9 @@
 ﻿@page "/login"
+@using Microsoft.AspNetCore.Authorization
 @using TicketingSystem.Blazor.Services
 @inject AuthService AuthService
 @inject NavigationManager Nav
+@attribute [AllowAnonymous]
 
 <div class="container mt-5">
     <div class="row justify-content-center">
