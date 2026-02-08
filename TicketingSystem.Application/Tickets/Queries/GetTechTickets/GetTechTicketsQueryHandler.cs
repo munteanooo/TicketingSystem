@@ -23,12 +23,10 @@ namespace TicketingSystem.Application.Tickets.Queries.GetTechTickets
 
         public async Task<IEnumerable<GetTechTicketsQueryResponseDto>> Handle(GetTechTicketsQuery request, CancellationToken cancellationToken)
         {
-            // Verify the technician exists
             var technician = await _userRepository.GetByIdAsync(request.TechnicianId, cancellationToken);
             if (technician == null)
                 throw NotFoundException.Create(nameof(User), request.TechnicianId);
 
-            // Verify current user is either the technician or an admin
             if (request.TechnicianId.ToString() != _currentUser.UserId && !_currentUser.IsAdmin)
                 throw ForbiddenException.Create("view", "technician tickets");
 
@@ -48,6 +46,7 @@ namespace TicketingSystem.Application.Tickets.Queries.GetTechTickets
                 Category = ticket.Category,
                 Priority = ticket.Priority.ToString(),
                 Status = ticket.Status.ToString(),
+                ClientName = ticket.Client?.FullName ?? "Unknown",
                 ClientId = ticket.ClientId,
                 AssignedTechnicianId = ticket.AssignedTechnicianId,
                 AssignedAt = ticket.AssignedAt,

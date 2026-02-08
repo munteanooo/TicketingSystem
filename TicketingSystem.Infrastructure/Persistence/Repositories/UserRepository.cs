@@ -56,13 +56,13 @@ namespace TicketingSystem.Infrastructure.Persistence.Repositories
         }
 
         /// <summary>
-        /// Get all active technicians with their assigned tickets
+        /// Get all active technicians (TechSupport) with their assigned tickets
         /// Ordered alphabetically by full name
         /// </summary>
         public async Task<IEnumerable<User>> GetAllTechniciansAsync(CancellationToken cancellationToken = default)
         {
             return await _dbSet
-                .Where(u => u.IsActive && u.Role == "Technician")
+                .Where(u => u.IsActive && u.Role == "TechSupport")
                 .Include(u => u.AssignedTickets)
                 .OrderBy(u => u.FullName)
                 .ToListAsync(cancellationToken);

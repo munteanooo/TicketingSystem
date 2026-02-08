@@ -1,0 +1,173 @@
+﻿@page "/tickets/details/{Id:guid}"
+@using TicketingSystem.Blazor.Models.DTOs
+@using TicketingSystem.Blazor.Services.Interfaces
+@inject ITicketService TicketService
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8">
+    @if (_ticket == null)
+    {
+        <MudProgressLinear Color="Color.Info" Indeterminate="true" />
+    }
+    else
+    {
+        <MudPaper Elevation="3" Class="pa-6">
+            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                <MudText Typo="Typo.h5">@_ticket.Title (#@_ticket.TicketNumber)</MudText>
+
+                @if (_ticket.Status != "Closed" && _ticket.Status != "Resolved")
+                {
+                    <AuthorizeView Roles="Admin, TechSupport">
+                        <Authorized>
+                            <MudButton Variant="Variant.Filled"
+                                       Color="Color.Error"
+                                       StartIcon="@Icons.Material.Filled.Lock"
+                                       OnClick="OnCloseClicked">
+                                Închide Tichet
+                            </MudButton>
+                        </Authorized>
+                    </AuthorizeView>
+                }
+            </MudStack>
+
+            <MudChip T="string" Color="@GetStatusColor(_ticket.Status)" Class="mt-2">@_ticket.Status</MudChip>
+
+            <MudText Typo="Typo.body1" Class="mt-4 pa-4 mud-bg-gray" Style="border-radius: 8px;">
+                @_ticket.Description
+            </MudText>
+
+            <MudText Typo="Typo.h6" Class="mt-8">Conversație</MudText>
+            <MudDivider Class="mb-4" />
+
+            @* Lista de mesaje *@
+            <MudStack Spacing="2" Class="mb-6">
+                @if (_ticket.Messages != null && _ticket.Messages.Any())
+                {
+                    @foreach (var msg in _ticket.Messages.OrderBy(m => m.CreatedAt))
+                    {
+                        <MudPaper Class="@(msg.IsFromSupport ? "pa-3 ml-10 border-l-4 border-solid" : "pa-3 mr-10")"
+                                  Style="@(msg.IsFromSupport ? "border-color: var(--mud-palette-primary);" : "")"
+                                  Elevation="1">
+                            <MudStack Row="true" Justify="Justify.SpaceBetween">
+                                <MudText Typo="Typo.caption" Style="font-weight:bold">@msg.AuthorName</MudText>
+                                <MudText Typo="Typo.caption">@msg.CreatedAt.ToString("g")</MudText>
+                            </MudStack>
+                            <MudText Typo="Typo.body2">@msg.Content</MudText>
+                        </MudPaper>
+                    }
+                }
+                else
+                {
+                    <MudText Typo="Typo.body2" Align="Align.Center" Color="Color.Secondary">Nu există mesaje încă.</MudText>
+                }
+            </MudStack>
+
+            @* Zona de adăugare mesaj nou *@
+            @if (_ticket.Status != "Closed")
+            {
+                <MudPaper Class="pa-4 mt-4" Elevation="0" Outlined="true">
+                    <MudTextField T="string" Label="Răspunsul tău" Variant="Variant.Outlined"
+                                  Lines="3" @bind-Value="_newMessageContent"
+                                  Placeholder="Scrie aici mesajul pentru client..." />
+                    <div class="d-flex justify-end mt-2">
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                                   Disabled="@(string.IsNullOrWhiteSpace(_newMessageContent) || _isSending)"
+                                   OnClick="HandleSendMessage">
+                            @if (_isSending)
+                            {
+                                <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+                                <MudText Class="ms-2">Se trimite...</MudText>
+                            }
+                            else
+                            {
+                                <MudText>Trimite Mesaj</MudText>
+                            }
+                        </MudButton>
+                    </div>
+                </MudPaper>
+            }
+        </MudPaper>
+    }
+</MudContainer>
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+    private TicketDto? _ticket;
+    private string _newMessageContent = "";
+    private bool _isSending = false;
+
+    protected override async Task OnInitializedAsync() => await LoadTicket();
+
+    private async Task LoadTicket()
+    {
+        try
+        {
+            _ticket = await TicketService.GetTicketById(Id);
+            if (_ticket == null)
+            {
+                Snackbar.Add("Tichetul nu a putut fi găsit.", Severity.Warning);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Eroare la încărcare: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task HandleSendMessage()
+    {
+        if (string.IsNullOrWhiteSpace(_newMessageContent)) return;
+
+        _isSending = true;
+        try
+        {
+            var result = await TicketService.AddMessage(Id, _newMessageContent);
+            if (result != null)
+            {
+                _newMessageContent = "";
+                await LoadTicket();
+                Snackbar.Add("Mesaj adăugat!", Severity.Success);
+            }
+            else
+            {
+                Snackbar.Add("Eroare la trimiterea mesajului.", Severity.Error);
+            }
+        }
+        finally
+        {
+            _isSending = false;
+        }
+    }
+
+    private async Task OnCloseClicked()
+    {
+        var result = await DialogService.ShowMessageBox(
+            "Confirmare",
+            "Ești sigur că dorești să închizi acest tichet?",
+            yesText: "Da",
+            cancelText: "Nu");
+
+        if (result == true)
+        {
+            var success = await TicketService.CloseTicket(Id);
+            if (success)
+            {
+                Snackbar.Add("Tichet închis cu succes!", Severity.Success);
+                await LoadTicket();
+            }
+            else
+            {
+                Snackbar.Add("Eroare la închiderea tichetului.", Severity.Error);
+            }
+        }
+    }
+
+    private Color GetStatusColor(string? s) => s?.ToLower() switch
+    {
+        "closed" => Color.Dark,
+        "inprogress" => Color.Warning,
+        "resolved" => Color.Success,
+        _ => Color.Info
+    };
+}

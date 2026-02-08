@@ -1,17 +1,88 @@
 ﻿@inherits LayoutComponentBase
+@using Microsoft.AspNetCore.Components.Authorization
+@using TicketingSystem.Blazor.Services
+@inject NavigationManager Nav
+@inject AuthenticationStateProvider AuthStateProvider
 
-<MudThemeProvider />
-<MudDialogProvider />
+<MudThemeProvider @bind-IsDarkMode="@_isDarkMode" Theme="_currentTheme" />
+@* Providerii esențiali pentru dialoguri, notificări și meniuri *@
+<MudDialogProvider FullWidth="true" MaxWidth="MaxWidth.ExtraSmall" />
 <MudSnackbarProvider />
+<MudPopoverProvider />
 
 <MudLayout>
-    <MudAppBar Elevation="1">
-        <MudText Typo="Typo.h5" Class="ml-3">Ticketing System</MudText>
+    <MudAppBar Elevation="1" Color="Color.Primary">
+        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())" />
+        <MudText Typo="Typo.h5" Class="ml-3">TicketPro</MudText>
+        <MudSpacer />
+
+        <MudToggleIconButton @bind-Toggled="@_isDarkMode"
+                             Icon="@Icons.Material.Filled.LightMode" Color="Color.Inherit"
+                             ToggledIcon="@Icons.Material.Filled.DarkMode" ToggledColor="Color.Inherit"
+                             Title="Schimbă modul vizual" />
+
+        <AuthorizeView>
+            <Authorized>
+                <div class="d-flex align-center">
+                    <MudText Typo="Typo.body1" Class="mr-4 d-none d-md-flex">Salut, @context.User.Identity?.Name!</MudText>
+                    <MudMenu Icon="@Icons.Material.Filled.AccountCircle" Color="Color.Inherit" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+                        <MudMenuItem Icon="@Icons.Material.Filled.Person">Profil</MudMenuItem>
+                        <MudDivider />
+                        <MudMenuItem Icon="@Icons.Material.Filled.Logout" OnClick="HandleLogout" Color="Color.Error">Logout</MudMenuItem>
+                    </MudMenu>
+                </div>
+            </Authorized>
+            <NotAuthorized>
+                <MudButton Href="/login" Variant="Variant.Text" Color="Color.Inherit" Class="mr-2">Login</MudButton>
+            </NotAuthorized>
+        </AuthorizeView>
     </MudAppBar>
 
+    <MudDrawer @bind-Open="_drawerOpen" ClipMode="DrawerClipMode.Always" Elevation="2" Variant="@DrawerVariant.Responsive">
+        <NavMenu />
+    </MudDrawer>
+
     <MudMainContent>
-        <MudContainer MaxWidth="MaxWidth.Large" Class="my-4">
-            @Body  
+        @* Containerul asigură că body-ul nu este lipit de margini *@
+        <MudContainer MaxWidth="MaxWidth.Large" Class="my-8">
+            @Body
         </MudContainer>
     </MudMainContent>
 </MudLayout>
+
+@code {
+    bool _drawerOpen = true;
+    bool _isDarkMode = false;
+
+    // Sfat: Mută definiția temei într-o clasă separată dacă devine prea complexă
+    private MudTheme _currentTheme = new MudTheme()
+    {
+        PaletteLight = new PaletteLight()
+        {
+            Primary = "#2196F3",
+            AppbarBackground = "#2196F3",
+            AppbarText = "#FFFFFF"
+        },
+        PaletteDark = new PaletteDark()
+        {
+            Primary = "#90CAF9",
+            Surface = "#1e1e2d",
+            Background = "#1a1a27"
+        },
+        LayoutProperties = new LayoutProperties()
+        {
+            DefaultBorderRadius = "8px"
+        }
+    };
+
+    void DrawerToggle() => _drawerOpen = !_drawerOpen;
+
+    private async Task HandleLogout()
+    {
+        if (AuthStateProvider is ApiAuthenticationStateProvider apiAuthStateProvider)
+        {
+            await apiAuthStateProvider.MarkUserAsLoggedOut();
+            Nav.NavigateTo("/login");
+        }
+    }
+}

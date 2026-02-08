@@ -1,0 +1,123 @@
+﻿@page "/tech/my-tickets"
+@using Microsoft.AspNetCore.Authorization
+@using TicketingSystem.Blazor.Services.Interfaces
+@using TicketingSystem.Application.Tickets.Queries.GetTechTickets
+@attribute [Authorize(Roles = "Admin,TechSupport")]
+@inject ITicketService TicketService
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-8">
+    <MudStack Spacing="6">
+
+        @* --- TICHETE DISPONIBILE (Metoda GetUnassignedTickets) --- *@
+        <MudCard Elevation="2" Class="border-l-4 mud-border-warning pa-2">
+            <MudCardHeader>
+                <CardHeaderContent>
+                    <MudText Typo="Typo.h5" Color="Color.Warning">Tichete Disponibile</MudText>
+                    <MudText Typo="Typo.body2">Nimeni nu lucrează la acestea. Preia unul!</MudText>
+                </CardHeaderContent>
+                <CardHeaderActions>
+                    <MudIconButton Icon="@Icons.Material.Filled.Refresh" Color="Color.Default" OnClick="LoadData" />
+                </CardHeaderActions>
+            </MudCardHeader>
+            <MudCardContent>
+                <MudTable Items="@_unassignedTickets" Loading="@_loading" Dense="true" Hover="true" EmptyContent="Nu sunt tichete libere.">
+                    <HeaderContent>
+                        <MudTh>ID</MudTh>
+                        <MudTh>Titlu</MudTh>
+                        <MudTh Style="text-align: right;">Acțiune</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd>#@(context.Id.ToString()[..8])</MudTd>
+                        <MudTd><b>@context.Title</b></MudTd>
+                        <MudTd Style="text-align: right;">
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small"
+                                       StartIcon="@Icons.Material.Filled.AssignmentInd"
+                                       OnClick="@(() => HandleAssign(context.Id))">
+                                Preia Tichet
+                            </MudButton>
+                        </MudTd>
+                    </RowTemplate>
+                </MudTable>
+            </MudCardContent>
+        </MudCard>
+
+        @* --- TICHETELE MELE (Metoda GetMyAssignedTickets) --- *@
+        <MudCard Elevation="4" Class="border-l-4 mud-border-info pa-2">
+            <MudCardHeader>
+                <CardHeaderContent>
+                    <MudText Typo="Typo.h5" Color="Color.Info">Tichetele Mele în Lucru</MudText>
+                </CardHeaderContent>
+            </MudCardHeader>
+            <MudCardContent>
+                <MudTable Items="@_assignedTickets" Loading="@_loading" Hover="true">
+                    <HeaderContent>
+                        <MudTh>ID</MudTh>
+                        <MudTh>Titlu</MudTh>
+                        <MudTh>Status</MudTh>
+                        <MudTh Style="text-align: right;">Gestionare</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd>#@(context.Id.ToString()[..8])</MudTd>
+                        <MudTd>@context.Title</MudTd>
+                        <MudTd>
+                            <MudChip T="string" Color="@GetStatusColor(context.Status)" Size="Size.Small">@context.Status</MudChip>
+                        </MudTd>
+                        <MudTd Style="text-align: right;">
+                            <MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small"
+                                       OnClick="@(() => OpenStatusDialog(context))">
+                                Schimbă Status
+                            </MudButton>
+                        </MudTd>
+                    </RowTemplate>
+                </MudTable>
+            </MudCardContent>
+        </MudCard>
+    </MudStack>
+</MudContainer>
+
+@code {
+    private List<GetTechTicketsQueryResponseDto> _assignedTickets = new();
+    private List<GetTechTicketsQueryResponseDto> _unassignedTickets = new();
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync() => await LoadData();
+
+    private async Task LoadData()
+    {
+        _loading = true;
+        // Folosim exact metodele din interfața ta
+        _unassignedTickets = await TicketService.GetUnassignedTickets() ?? new();
+        _assignedTickets = await TicketService.GetMyAssignedTickets() ?? new();
+        _loading = false;
+    }
+
+    private async Task HandleAssign(Guid id)
+    {
+        var success = await TicketService.AssignTicket(id);
+        if (success)
+        {
+            Snackbar.Add("Tichet alocat cu succes!", Severity.Success);
+            await LoadData();
+        }
+    }
+
+    private async Task OpenStatusDialog(GetTechTicketsQueryResponseDto ticket)
+    {
+        var parameters = new DialogParameters { ["TicketId"] = ticket.Id, ["CurrentStatus"] = ticket.Status };
+        var dialog = await DialogService.ShowAsync<AdvancedStatusDialog>("Actualizare Tichet", parameters);
+        var result = await dialog.Result;
+
+        if (result != null && !result.Canceled) await LoadData();
+    }
+
+    private Color GetStatusColor(string? s) => s switch
+    {
+        "Open" => Color.Error,
+        "InProgress" => Color.Info,
+        "Resolved" => Color.Success,
+        "Closed" => Color.Default,
+        _ => Color.Default
+    };
+}

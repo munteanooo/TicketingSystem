@@ -1,0 +1,84 @@
+﻿@page "/admin/tickets"
+@using TicketingSystem.Application.Tickets.Queries.GetTechTickets
+@attribute [Authorize(Roles = "Admin,TechSupport")]
+@inject ITicketService TicketService
+@inject NavigationManager Nav
+
+<MudText Typo="Typo.h4" GutterBottom="true">Gestionare Globală Tichete</MudText>
+
+<MudPaper Class="pa-4 mb-4" Elevation="0">
+    <MudStack Row="true" Spacing="4">
+        <MudText Typo="Typo.body1" Class="align-self-center">Filtre Status:</MudText>
+        <MudChip T="string" Color="Color.Default" OnClick="@(() => FilterByStatus(null))">Toate</MudChip>
+        <MudChip T="string" Color="Color.Error" OnClick="@(() => FilterByStatus("Open"))">Deschise</MudChip>
+        <MudChip T="string" Color="Color.Info" OnClick="@(() => FilterByStatus("InProgress"))">În Lucru</MudChip>
+        <MudChip T="string" Color="Color.Success" OnClick="@(() => FilterByStatus("Closed"))">Închise</MudChip>
+    </MudStack>
+</MudPaper>
+
+<MudTable Items="@_filteredTickets" Hover="true" Elevation="2" Loading="@(_tickets == null)" Filter="new Func<GetTechTicketsQueryResponseDto, bool>(FilterFunc1)">
+    <ToolBarContent>
+        <MudText Typo="Typo.h6">Listă Tichete</MudText>
+        <MudSpacer />
+        <MudTextField @bind-Value="_searchString" Placeholder="Caută după titlu sau nr..." Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+    </ToolBarContent>
+    <HeaderContent>
+        <MudTh>Nr. Tichet</MudTh>
+        <MudTh>Titlu</MudTh>
+        <MudTh>Prioritate</MudTh>
+        <MudTh>Status</MudTh>
+        <MudTh>Creat la</MudTh>
+        <MudTh>Tehnician</MudTh>
+        <MudTh>Acțiuni</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="Nr. Tichet">@context.TicketNumber</MudTd>
+        <MudTd DataLabel="Titlu">@context.Title</MudTd>
+        <MudTd DataLabel="Prioritate">
+            <MudChip T="string" Color="@GetPriorityColor(context.Priority)" Size="Size.Small">@context.Priority</MudChip>
+        </MudTd>
+        <MudTd DataLabel="Status">
+            <MudBadge Content="@context.Status" Color="@GetStatusColor(context.Status)" Overlap="false" Bordered="true" />
+        </MudTd>
+        <MudTd DataLabel="Creat la">@context.CreatedAt.ToString("dd.MM.yyyy")</MudTd>
+        <MudTd DataLabel="Tehnician">
+            @(context.AssignedTechnicianId.HasValue ? "Alocat" : "Nealocat")
+        </MudTd>
+        <MudTd>
+            <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" OnClick="@(() => EditTicket(context.Id))" />
+        </MudTd>
+    </RowTemplate>
+</MudTable>
+
+@code {
+    private List<GetTechTicketsQueryResponseDto>? _tickets;
+    private List<GetTechTicketsQueryResponseDto>? _filteredTickets;
+    private string _searchString = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        _tickets = await TicketService.GetUnassignedTickets();
+        _filteredTickets = _tickets;
+    }
+
+    private bool FilterFunc1(GetTechTicketsQueryResponseDto element) => FilterFunc(element, _searchString);
+
+    private bool FilterFunc(GetTechTicketsQueryResponseDto element, string searchString)
+    {
+        if (string.IsNullOrWhiteSpace(searchString)) return true;
+        if (element.Title.Contains(searchString, StringComparison.OrdinalIgnoreCase)) return true;
+        if (element.TicketNumber.Contains(searchString, StringComparison.OrdinalIgnoreCase)) return true;
+        return false;
+    }
+
+    private void FilterByStatus(string? status)
+    {
+        if (string.IsNullOrEmpty(status)) _filteredTickets = _tickets;
+        else _filteredTickets = _tickets?.Where(x => x.Status == status).ToList();
+    }
+
+    private Color GetPriorityColor(string p) => p switch { "High" => Color.Error, "Medium" => Color.Warning, _ => Color.Info };
+    private Color GetStatusColor(string s) => s switch { "Open" => Color.Error, "InProgress" => Color.Info, "Closed" => Color.Success, _ => Color.Default };
+
+    private void EditTicket(Guid id) => Nav.NavigateTo($"/tickets/edit/{id}");
+}

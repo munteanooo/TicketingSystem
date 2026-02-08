@@ -1,0 +1,63 @@
+﻿@using MudBlazor
+@using TicketingSystem.Blazor.Services.Interfaces
+@inject ITicketService TicketService
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">Actualizare Status și Răspuns</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudStack Spacing="4">
+            <MudSelect T="string" Label="Noul Status" @bind-Value="_selectedStatus" Variant="Variant.Outlined">
+                <MudSelectItem Value="@("InProgress")">În Lucru</MudSelectItem>
+                <MudSelectItem Value="@("Resolved")">Rezolvat (Finalizat)</MudSelectItem>
+                <MudSelectItem Value="@("Closed")">Închis (Arhivat)</MudSelectItem>
+            </MudSelect>
+            <MudTextField T="string" Label="Mesaj pentru client (Obligatoriu)"
+                          @bind-Value="_note" Lines="4" Variant="Variant.Outlined"
+                          Placeholder="Explică ce s-a lucrat sau oferă soluția..." />
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Anulează</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit"
+                   Disabled="@(string.IsNullOrWhiteSpace(_note))">
+            Confirmă și Trimite
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter] public Guid TicketId { get; set; }
+    [Parameter] public string? CurrentStatus { get; set; }
+
+    private string _selectedStatus = "";
+    private string _note = "";
+
+    protected override void OnInitialized() => _selectedStatus = CurrentStatus ?? "InProgress";
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private async Task Submit()
+    {
+        // Executăm ambele operațiuni
+        var statusTask = TicketService.UpdateTicketStatus(TicketId, _selectedStatus);
+        var messageTask = TicketService.AddMessage(TicketId, _note);
+
+        // Așteptăm finalizarea ambelor
+        await Task.WhenAll(statusTask, messageTask);
+
+        if (await statusTask && await messageTask != null)
+        {
+            Snackbar.Add("Status actualizat și mesaj trimis!", Severity.Success);
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        else
+        {
+            Snackbar.Add("A apărut o eroare la salvarea datelor.", Severity.Error);
+        }
+    }
+}

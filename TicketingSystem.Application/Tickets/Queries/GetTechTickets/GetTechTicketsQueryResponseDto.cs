@@ -9,6 +9,7 @@
         public required string Category { get; set; }
         public required string Priority { get; set; }
         public required string Status { get; set; }
+        public required string ClientName { get; set; }
         public required Guid ClientId { get; set; }
         public Guid? AssignedTechnicianId { get; set; }
         public DateTime? AssignedAt { get; set; }

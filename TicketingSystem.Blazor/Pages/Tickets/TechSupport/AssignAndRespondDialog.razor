@@ -1,0 +1,88 @@
+﻿@using MudBlazor
+@using TicketingSystem.Blazor.Services.Interfaces
+@inject ITicketService TicketService
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.AssignmentInd" Class="mr-2" />
+            @(!string.IsNullOrWhiteSpace(Title) ? $"Preluare: {Title}" : "Preluare tichet")
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudText Typo="Typo.body2" Class="mb-4">
+            Tichetul va fi atribuit ție și statusul va fi setat la <b>În Lucru</b>.
+        </MudText>
+
+        <MudTextField T="string"
+                      Label="Mesaj către client"
+                      @bind-Value="_message"
+                      Lines="5"
+                      Variant="Variant.Outlined"
+                      FullWidth
+                      AutoGrow
+                      Placeholder="Introduceți un mesaj inițial sau lăsați gol pentru mesajul automat..." />
+    </DialogContent>
+    <DialogActions>
+        <MudButton Variant="Variant.Text" OnClick="Cancel">Anulează</MudButton>
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   OnClick="Submit"
+                   Disabled="@_submitting"
+                   StartIcon="@(_submitting ? null : Icons.Material.Filled.Send)">
+            @(_submitting ? "Se procesează..." : "Preia și trimite")
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudBlazor.IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter] public Guid TicketId { get; set; }
+    [Parameter] public string? Title { get; set; }
+
+    private string _message = string.Empty;
+    private bool _submitting;
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private async Task Submit()
+    {
+        if (_submitting) return;
+        _submitting = true;
+
+        try
+        {
+            // 1. Încercăm alocarea tichetului
+            var assigned = await TicketService.AssignTicket(TicketId);
+
+            if (assigned)
+            {
+                // 2. Pregătim mesajul (dacă e gol, trimitem o notificare standard)
+                var content = string.IsNullOrWhiteSpace(_message)
+                    ? "Bună ziua! Am preluat solicitarea dumneavoastră și am început verificările."
+                    : _message.Trim();
+
+                // 3. Adăugăm mesajul în sistem
+                await TicketService.AddMessage(TicketId, content);
+
+                Snackbar.Add("Tichet preluat și alocat cu succes!", Severity.Success);
+                MudDialog.Close(DialogResult.Ok(true));
+            }
+            else
+            {
+                Snackbar.Add("Eroare: Nu s-a putut face alocarea. Verifică dacă tichetul a fost deja preluat.", Severity.Warning);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Eroare de conexiune la server.", Severity.Error);
+            Console.WriteLine($"Error in AssignDialog: {ex.Message}");
+        }
+        finally
+        {
+            _submitting = false;
+        }
+    }
+}

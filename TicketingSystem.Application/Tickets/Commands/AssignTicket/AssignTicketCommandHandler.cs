@@ -2,6 +2,7 @@
 using TicketingSystem.Application.Contracts.Exceptions;
 using TicketingSystem.Application.Contracts.Interfaces;
 using TicketingSystem.Domain.Entities;
+using TicketingSystem.Domain.Enums;
 
 namespace TicketingSystem.Application.Tickets.Commands.AssignTicket
 {
@@ -16,39 +17,45 @@ namespace TicketingSystem.Application.Tickets.Commands.AssignTicket
             IUserRepository userRepository,
             ICurrentUser currentUser)
         {
-            _ticketRepository = ticketRepository;
-            _userRepository = userRepository;
-            _currentUser = currentUser;
+            _ticketRepository = ticketRepository ?? throw new ArgumentNullException(nameof(ticketRepository));
+            _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
+            _currentUser = currentUser ?? throw new ArgumentNullException(nameof(currentUser));
         }
 
         public async Task<AssignTicketCommandResponseDto> Handle(AssignTicketCommand request, CancellationToken cancellationToken)
         {
+            // 1. Autorizare: Doar Admin sau Staff Tehnic
             if (!_currentUser.IsAdmin && !_currentUser.IsTechnician)
+            {
                 throw ForbiddenException.Create("assign", nameof(Ticket));
+            }
 
-            var ticket = await _ticketRepository.GetByIdAsync(request.CommandDto.TicketId, cancellationToken);
+            // 2. Verifică existența Tichetului
+            var ticket = await _ticketRepository.GetByIdForAdminAsync(request.CommandDto.TicketId, cancellationToken);
             if (ticket == null)
                 throw NotFoundException.Create(nameof(Ticket), request.CommandDto.TicketId);
 
+            // 3. Verifică existența Tehnicianului
             var technician = await _userRepository.GetByIdAsync(request.CommandDto.TechnicianId, cancellationToken);
             if (technician == null)
                 throw NotFoundException.Create(nameof(User), request.CommandDto.TechnicianId);
 
+            // 4. Logica de Business
             ticket.AssignedTechnicianId = technician.Id;
-            ticket.AssignedTechnician = technician;
             ticket.AssignedAt = DateTime.UtcNow;
 
+            // IMPORTANT: set status to InProgress when assigned and update timestamps
+            ticket.Status = TicketStatus.InProgress;
+            ticket.UpdatedAt = DateTime.UtcNow;
+
+            // 5. Stage update — UnitOfWorkBehavior va persista
             await _ticketRepository.UpdateAsync(ticket, cancellationToken);
 
-            return MapToDto(ticket);
-        }
-
-        private AssignTicketCommandResponseDto MapToDto(Ticket ticket)
-        {
+            // 6. Răspuns DTO
             return new AssignTicketCommandResponseDto
             {
                 Id = ticket.Id,
-                TicketNumber = ticket.TicketNumber,
+                TicketNumber = ticket.TicketNumber ?? "N/A",
                 Title = ticket.Title,
                 Status = ticket.Status.ToString(),
                 AssignedTechnicianId = ticket.AssignedTechnicianId,

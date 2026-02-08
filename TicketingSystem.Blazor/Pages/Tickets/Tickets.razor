@@ -1,55 +1,73 @@
 ﻿@page "/tickets"
-@attribute [Authorize]
 @using Microsoft.AspNetCore.Authorization
-@using TicketingSystem.Application.Tickets.Queries.GetClientTickets
-@inject TicketService TicketService
+@using System.Net.Http.Json
+@using TicketingSystem.Blazor.Models.DTOs
+@attribute [Authorize]
+@inject HttpClient Http
+@inject NavigationManager Nav
 @inject ISnackbar Snackbar
 
-<MudText Typo="Typo.h4" Class="mb-4">Tichetele Mele</MudText>
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-8">
+    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-6">
+        <div>
+            <MudText Typo="Typo.h4" Color="Color.Primary">Tichetele Mele</MudText>
+            <MudText Typo="Typo.body2">Gestionează solicitările tale de suport.</MudText>
+        </div>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.Add"
+                   OnClick='() => Nav.NavigateTo("/tickets/add")'>
+            Tichet Nou
+        </MudButton>
+    </MudStack>
 
-<MudTable Items="@tickets" Hover="true" Elevation="2" Loading="@_loading" LoadingProgressColor="Color.Info">
-    <HeaderContent>
-        <MudTh>Titlu</MudTh>
-        <MudTh>Status</MudTh>
-        <MudTh>Data</MudTh>
-        <MudTh>Acțiuni</MudTh>
-    </HeaderContent>
-    <RowTemplate>
-        <MudTd DataLabel="Titlu">@context.Title</MudTd>
-        <MudTd DataLabel="Status">
-            <MudChip T="string" Color="@GetColor(context.Status)" Size="Size.Small">@context.Status</MudChip>
-        </MudTd>
-        <MudTd DataLabel="Data">@context.CreatedAt.ToShortDateString()</MudTd>
-        <MudTd>
-            <MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small">Detalii</MudButton>
-        </MudTd>
-    </RowTemplate>
-    <NoRecordsContent>
-        <MudText>Nu am găsit niciun tichet.</MudText>
-    </NoRecordsContent>
-</MudTable>
+    <MudTable Items="@_tickets" Hover="true" Loading="@(_tickets == null)" Elevation="2">
+        <HeaderContent>
+            <MudTh>Titlu</MudTh>
+            <MudTh>Status</MudTh>
+            <MudTh>Creat la</MudTh>
+            <MudTh Style="text-align:right">Acțiuni</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Titlu"><b>@context.Title</b></MudTd>
+            <MudTd DataLabel="Status">
+                <MudChip T="string" Color="@GetStatusColor(context.Status)" Size="Size.Small" Variant="Variant.Filled">@context.Status</MudChip>
+            </MudTd>
+            <MudTd DataLabel="Creat la">@context.CreatedAt.ToString("dd.MM.yyyy")</MudTd>
+            <MudTd DataLabel="Acțiuni" Style="text-align:right">
+                <MudIconButton Icon="@Icons.Material.Filled.Visibility" Color="Color.Info"
+                               OnClick="@(() => Nav.NavigateTo($"/tickets/details/{context.Id}"))" />
+            </MudTd>
+        </RowTemplate>
+        <NoRecordsContent>
+            <MudText Class="pa-4">Momentan nu există tichete.</MudText>
+        </NoRecordsContent>
+        <PagerContent>
+            <MudTablePager RowsPerPageString="Rânduri:" />
+        </PagerContent>
+    </MudTable>
+</MudContainer>
 
 @code {
-    private List<GetClientTicketsQueryResponseDto> tickets = new();
-    private bool _loading = true;
+    private List<TicketDto>? _tickets;
 
     protected override async Task OnInitializedAsync()
     {
-        try 
+        try
         {
-            tickets = await TicketService.GetTickets();
+            _tickets = await Http.GetFromJsonAsync<List<TicketDto>>("api/tickets/my-tickets");
         }
-        finally 
+        catch
         {
-            _loading = false;
+            Snackbar.Add("Eroare la conectarea cu serverul.", Severity.Error);
+            _tickets = new();
         }
     }
 
-    private Color GetColor(string status) => status switch
+    private Color GetStatusColor(string s) => s switch
     {
-        "Open" => Color.Success,
-        "Closed" => Color.Error,
-        "InProgress" => Color.Warning,
+        "Nou" => Color.Info,
+        "În Lucru" => Color.Warning,
+        "Rezolvat" => Color.Success,
         _ => Color.Default
     };
 }

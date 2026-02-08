@@ -35,7 +35,6 @@ namespace TicketingSystem.Application.Tickets.Commands.ChangeStatus
             // 4. VALIDARE BUSINESS: Blocăm "In Progress" dacă nu există un tehnician alocat
             if (newStatus == TicketStatus.InProgress && ticket.AssignedTechnicianId == null)
             {
-                // Folosim o excepție de tip BadRequest/Validation pentru a fi prinsă de Middleware
                 throw new ValidationException("Tichetul trebuie să fie alocat unui tehnician înainte de a fi trecut în 'In Progress'.");
             }
 

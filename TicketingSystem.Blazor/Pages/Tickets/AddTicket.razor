@@ -1,0 +1,109 @@
+﻿@page "/tickets/add"
+@using Microsoft.AspNetCore.Authorization
+@using System.Net.Http.Json
+@using System.ComponentModel.DataAnnotations
+@attribute [Authorize]
+@inject HttpClient Http
+@inject ISnackbar Snackbar
+@inject NavigationManager Nav
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-10">
+    <MudPaper Elevation="4" Class="pa-8 mud-paper-styled">
+        <MudText Typo="Typo.h5" Align="Align.Center" Class="mb-6" Color="Color.Primary">Creare Tichet Nou</MudText>
+
+        <EditForm Model="@_model" OnValidSubmit="HandleSubmit">
+            <DataAnnotationsValidator />
+            <MudStack Spacing="4">
+                <MudTextField Label="Titlu" @bind-Value="_model.Title"
+                              Variant="Variant.Outlined" For="@(() => _model.Title)"
+                              Placeholder="Ex: Nu funcționează imprimanta" />
+
+                <MudTextField Label="Descriere" @bind-Value="_model.Description"
+                              Variant="Variant.Outlined" Lines="4"
+                              For="@(() => _model.Description)"
+                              Placeholder="Descrie problema în detaliu..." />
+
+                <MudGrid>
+                    <MudItem xs="6">
+                        <MudSelect T="string" Label="Categorie" @bind-Value="_model.Category" Variant="Variant.Outlined">
+                            <MudSelectItem Value="@("Software")">Software</MudSelectItem>
+                            <MudSelectItem Value="@("Hardware")">Hardware</MudSelectItem>
+                            <MudSelectItem Value="@("Rețea")">Rețea</MudSelectItem>
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="6">
+                        <MudSelect T="string" Label="Prioritate" @bind-Value="_model.Priority" Variant="Variant.Outlined">
+                            <MudSelectItem Value="@("Low")">Scăzută</MudSelectItem>
+                            <MudSelectItem Value="@("Medium")">Medie</MudSelectItem>
+                            <MudSelectItem Value="@("High")">Ridicată</MudSelectItem>
+                        </MudSelect>
+                    </MudItem>
+                </MudGrid>
+
+                <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled"
+                           Color="Color.Primary" FullWidth="true" Class="mt-4"
+                           Size="Size.Large" Disabled="@_isProcessing">
+                    @if (_isProcessing)
+                    {
+                        <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+                        <MudText Class="ms-2">Se trimite...</MudText>
+                    }
+                    else
+                    {
+                        <MudText>Trimite Solicitarea</MudText>
+                    }
+                </MudButton>
+
+                <MudButton Variant="Variant.Text" FullWidth="true"
+                           OnClick='() => Nav.NavigateTo("/tickets")'>
+                    Anulează
+                </MudButton>
+            </MudStack>
+        </EditForm>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private CreateTicketDto _model = new() { Category = "Software", Priority = "Medium" };
+    private bool _isProcessing = false;
+
+    private async Task HandleSubmit()
+    {
+        _isProcessing = true;
+        try
+        {
+            var response = await Http.PostAsJsonAsync("api/tickets", _model);
+            if (response.IsSuccessStatusCode)
+            {
+                Snackbar.Add("Tichetul a fost creat cu succes!", Severity.Success);
+                Nav.NavigateTo("/tickets");
+            }
+            else
+            {
+                Snackbar.Add("Eroare la salvarea tichetului.", Severity.Error);
+            }
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("Probleme de conexiune cu serverul.", Severity.Error);
+        }
+        finally
+        {
+            _isProcessing = false;
+        }
+    }
+
+    public class CreateTicketDto
+    {
+        [Required(ErrorMessage = "Titlul este obligatoriu")]
+        [StringLength(100, ErrorMessage = "Titlul este prea lung")]
+        public string Title { get; set; } = "";
+
+        [Required(ErrorMessage = "Descrierea este obligatorie")]
+        [MinLength(10, ErrorMessage = "Te rugăm să oferi mai multe detalii")]
+        public string Description { get; set; } = "";
+
+        public string Category { get; set; } = "";
+        public string Priority { get; set; } = "";
+    }
+}

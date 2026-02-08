@@ -1,0 +1,114 @@
+﻿@page "/tech/dashboard"
+@using Microsoft.AspNetCore.Authorization
+@using TicketingSystem.Application.Tickets.Queries.GetTechTickets
+@using TicketingSystem.Blazor.Services.Interfaces
+@attribute [Authorize(Roles = "Admin,TechSupport")]
+@inject ITicketService TicketService
+@inject ISnackbar Snackbar
+@inject NavigationManager Nav
+@inject IDialogService DialogService
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-8">
+    <MudText Typo="Typo.h4" Color="Color.Primary" Class="mb-6">Consolă Tehnician</MudText>
+
+    @* --- TABEL 1: TICHETELE MELE ACTIVE (Unde rămâne chat-ul) --- *@
+    <MudText Typo="Typo.h6" Class="mb-2">Tichetele Mele (În lucru)</MudText>
+    <MudTable Items="@_myActiveTickets" Loading="@_loading" Hover="true" Elevation="2" Class="mb-8" EmptyContent="Nu ai tichete preluate în acest moment.">
+        <HeaderContent>
+            <MudTh>Titlu</MudTh>
+            <MudTh>Creat la</MudTh>
+            <MudTh>Status</MudTh>
+            <MudTh Style="text-align:right">Acțiuni</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Titlu">@context.Title</MudTd>
+            <MudTd DataLabel="Creat la">@context.CreatedAt.ToString("g")</MudTd>
+            <MudTd DataLabel="Status">
+                <MudChip T="string" Color="Color.Warning" Size="Size.Small">@context.Status</MudChip>
+            </MudTd>
+            <MudTd Style="text-align:right">
+                <MudButton Variant="Variant.Outlined"
+                           Color="Color.Info"
+                           Size="Size.Small"
+                           OnClick="@(() => Nav.NavigateTo($"/tickets/details/{context.Id}"))">
+                    Deschide Chat
+                </MudButton>
+            </MudTd>
+        </RowTemplate>
+    </MudTable>
+
+    @* --- TABEL 2: TICHETE NOI (NEALOCATE) --- *@
+    <MudText Typo="Typo.h6" Class="mb-2">Tichete Noi (Nealocate)</MudText>
+    <MudTable Items="@_unassignedTickets" Loading="@_loading" Hover="true" Elevation="2" EmptyContent="Nu sunt tichete noi în așteptare.">
+        <HeaderContent>
+            <MudTh>Titlu</MudTh>
+            <MudTh>Creat la</MudTh>
+            <MudTh Style="text-align:right">Acțiuni</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Titlu">@context.Title</MudTd>
+            <MudTd DataLabel="Creat la">@context.CreatedAt.ToString("g")</MudTd>
+            <MudTd Style="text-align:right">
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small"
+                           OnClick="@(() => HandleAssign(context.Id, context.Title))">
+                    Preluare
+                </MudButton>
+            </MudTd>
+        </RowTemplate>
+    </MudTable>
+</MudContainer>
+
+@code {
+    private List<GetTechTicketsQueryResponseDto>? _unassignedTickets;
+    private List<GetTechTicketsQueryResponseDto>? _myActiveTickets;
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync() => await LoadData();
+
+    private async Task LoadData()
+    {
+        _loading = true;
+        try
+        {
+            // Apelăm ambele liste în paralel pentru performanță
+            var unassignedTask = TicketService.GetUnassignedTickets();
+            var myTicketsTask = TicketService.GetMyAssignedTickets();
+
+            await Task.WhenAll(unassignedTask, myTicketsTask);
+
+            _unassignedTickets = await unassignedTask;
+            _myActiveTickets = await myTicketsTask;
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Eroare la încărcarea datelor.", Severity.Error);
+            Console.WriteLine(ex.Message);
+        }
+        finally { _loading = false; }
+    }
+
+    private async Task HandleAssign(Guid ticketId, string? title)
+    {
+        try
+        {
+            var parameters = new DialogParameters { ["TicketId"] = ticketId, ["Title"] = title ?? string.Empty };
+            var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small };
+
+            // Deschidem dialogul de preluare
+            var dialogRef = await DialogService.ShowAsync<AssignAndRespondDialog>("Preluare tichet", parameters, options);
+            var result = await dialogRef.Result;
+
+            // Dacă s-a confirmat preluarea în Dialog (Ok)
+            if (result != null && !result.Canceled)
+            {
+                Snackbar.Add("Tichet preluat cu succes!", Severity.Success);
+                await LoadData(); // Reîncărcăm listele: va dispărea de jos și va apărea sus
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Eroare la preluarea tichetului.", Severity.Error);
+            Console.WriteLine(ex.Message);
+        }
+    }
+}

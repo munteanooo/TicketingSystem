@@ -5,36 +5,32 @@
                 <NotAuthorized>
                     @if (context.User.Identity?.IsAuthenticated != true)
                     {
-                        @* Utilizatorul nu este logat delose - Trimitem la Login *@
                         <RedirectToLogin />
                     }
                     else
                     {
-                        @* Utilizatorul e logat dar nu are Rolul necesar (ex: Client vrea la Admin) *@
-                        <div class="container mt-5">
-                            <div class="alert alert-danger shadow border-start border-5 border-danger">
-                                <div class="d-flex align-items-center">
-                                    <i class="bi bi-exclamation-octagon-fill fs-2 me-3"></i>
-                                    <div>
-                                        <h4 class="alert-heading">Acces Interzis</h4>
-                                        <p>Nu aveți permisiunile necesare pentru a vizualiza această pagină.</p>
-                                    </div>
-                                </div>
-                                <hr>
-                                <a href="/" class="btn btn-danger">Înapoi la Acasă</a>
-                            </div>
-                        </div>
+                        <MudContainer MaxWidth="MaxWidth.Small" Class="mt-16">
+                            <MudAlert Severity="Severity.Error" Variant="Variant.Filled" Elevation="4" Class="py-8">
+                                <MudText Typo="Typo.h5">Acces Interzis</MudText>
+                                <MudText>Nu aveți permisiunile necesare pentru a vizualiza această pagină.</MudText>
+                                <MudButton Variant="Variant.Text" Color="Color.Inherit"
+                                           Href="/" Class="mt-4">Înapoi la Acasă</MudButton>
+                            </MudAlert>
+                        </MudContainer>
                     }
                 </NotAuthorized>
             </AuthorizeRouteView>
         </Found>
         <NotFound>
+            <PageTitle>404 - Negăsit</PageTitle>
             <LayoutView Layout="@typeof(MainLayout)">
-                <div class="container mt-5 text-center">
-                    <h1 class="display-1 fw-bold">404</h1>
-                    <p class="h3">Pagina nu a fost găsită.</p>
-                    <a href="/" class="btn btn-primary mt-3">Mergi la Acasă</a>
-                </div>
+                <MudContainer MaxWidth="MaxWidth.Small" Class="mt-16 text-center">
+                    <MudText Typo="Typo.h1" Color="Color.Primary" Style="font-weight: 900;">404</MudText>
+                    <MudText Typo="Typo.h5" Class="mb-4">Hopa! Pagina nu a fost găsită.</MudText>
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/">
+                        Mergi la Acasă
+                    </MudButton>
+                </MudContainer>
             </LayoutView>
         </NotFound>
     </Router>

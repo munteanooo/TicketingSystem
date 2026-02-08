@@ -18,14 +18,16 @@ namespace TicketingSystem.Application.Tickets.Commands.AddMessage
 
         public async Task<AddMessageCommandResponseDto> Handle(AddMessageCommand request, CancellationToken cancellationToken)
         {
-            var ticket = await _ticketRepository.GetByIdAsync(request.CommandDto.TicketId, cancellationToken);
+            var ticket = await _ticketRepository.GetByIdForAdminAsync(request.CommandDto.TicketId, cancellationToken);
+
             if (ticket == null)
                 throw NotFoundException.Create(nameof(Ticket), request.CommandDto.TicketId);
 
             var currentUserId = Guid.Parse(_currentUser.UserId!);
 
-            if (ticket.ClientId != currentUserId && ticket.AssignedTechnicianId != currentUserId)
-                throw ForbiddenException.InvalidOwner(nameof(Ticket));
+            // Autorizare: Clientul lui, Tech-ul alocat, sau Admin
+            if (ticket.ClientId != currentUserId && ticket.AssignedTechnicianId != currentUserId && !_currentUser.IsAdmin)
+                throw ForbiddenException.Create("add message", nameof(Ticket));
 
             var message = new TicketMessage
             {
@@ -37,7 +39,9 @@ namespace TicketingSystem.Application.Tickets.Commands.AddMessage
             };
 
             await _ticketRepository.AddMessageAsync(message, cancellationToken);
-            await _ticketRepository.SaveChangesAsync(cancellationToken);
+
+            ticket.UpdatedAt = DateTime.UtcNow;
+            await _ticketRepository.UpdateAsync(ticket, cancellationToken);
 
             return new AddMessageCommandResponseDto
             {

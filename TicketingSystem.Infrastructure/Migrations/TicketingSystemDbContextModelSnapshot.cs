@@ -224,19 +224,10 @@ namespace TicketingSystem.Infrastructure.Migrations
                     b.HasIndex("ClientId")
                         .HasDatabaseName("IX_Tickets_ClientId");
 
-                    b.HasIndex("CreatedAt")
-                        .HasDatabaseName("IX_Tickets_CreatedAt");
-
-                    b.HasIndex("Priority")
-                        .HasDatabaseName("IX_Tickets_Priority");
-
-                    b.HasIndex("Status")
-                        .HasDatabaseName("IX_Tickets_Status");
-
                     b.HasIndex("TicketNumber")
                         .IsUnique();
 
-                    b.ToTable("Ticket");
+                    b.ToTable("Tickets", (string)null);
                 });
 
             modelBuilder.Entity("TicketingSystem.Domain.Entities.TicketMessage", b =>
@@ -262,23 +253,18 @@ namespace TicketingSystem.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("AuthorId")
-                        .HasDatabaseName("IX_Messages_AuthorId");
+                    b.HasIndex("AuthorId");
 
-                    b.HasIndex("CreatedAt")
-                        .HasDatabaseName("IX_Messages_CreatedAt");
+                    b.HasIndex("TicketId");
 
-                    b.HasIndex("TicketId")
-                        .HasDatabaseName("IX_Messages_TicketId");
-
-                    b.ToTable("TicketMessage");
+                    b.ToTable("TicketMessages", (string)null);
                 });
 
             modelBuilder.Entity("TicketingSystem.Domain.Entities.User", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("Id");
 
                     b.Property<int>("AccessFailedCount")
                         .HasColumnType("integer");

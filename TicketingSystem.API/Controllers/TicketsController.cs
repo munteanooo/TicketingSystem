@@ -4,123 +4,96 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TicketingSystem.Application.Tickets.Commands.AddMessage;
 using TicketingSystem.Application.Tickets.Commands.AssignTicket;
-using TicketingSystem.Application.Tickets.Commands.ChangeStatus;
 using TicketingSystem.Application.Tickets.Commands.CloseTicket;
 using TicketingSystem.Application.Tickets.Commands.CreateTicket;
+using TicketingSystem.Application.Tickets.Queries;
 using TicketingSystem.Application.Tickets.Queries.GetClientTickets;
-using TicketingSystem.Application.Tickets.Queries.GetTechTickets;
 using TicketingSystem.Application.Tickets.Queries.GetTicketDetails;
-using TicketingSystem.Application.Tickets.Queries.GetTicketMessages;
 
-namespace TicketingSystem.API.Controllers
+namespace TicketingSystem.API.Controllers;
+
+[ApiController]
+[Route("api/[controller]")]
+[Authorize]
+public class TicketsController : ControllerBase
 {
-    [ApiController]
-    [Route("api/[controller]")]
-    [Authorize]
-    public class TicketsController : ControllerBase
+    private readonly IMediator _mediator;
+    public TicketsController(IMediator mediator) => _mediator = mediator;
+
+    [HttpGet("my-tickets")]
+    public async Task<IActionResult> GetMyTickets(CancellationToken ct)
     {
-        private readonly IMediator _mediator;
+        var userId = GetUserId();
+        if (userId == Guid.Empty) return Unauthorized();
+        return Ok(await _mediator.Send(new GetClientTicketsQuery(userId), ct));
+    }
 
-        public TicketsController(IMediator mediator)
-        {
-            _mediator = mediator;
-        }
+    [HttpGet("unassigned")]
+    [Authorize(Roles = "Admin,TechSupport")]
+    public async Task<IActionResult> GetUnassignedTickets(CancellationToken ct)
+    {
+        return Ok(await _mediator.Send(new GetUnassignedTicketsQuery(), ct));
+    }
 
-        // --- DTO-uri locale pentru Request-uri simple ---
-        public class MessageRequest { public string Content { get; set; } = string.Empty; }
+    // REZOLVĂ 404: Endpoint-ul pentru tichetele preluate de tehnician
+    [HttpGet("my-assigned")]
+    [Authorize(Roles = "Admin,TechSupport")]
+    public async Task<IActionResult> GetMyAssignedTickets(CancellationToken ct)
+    {
+        var userId = GetUserId();
+        if (userId == Guid.Empty) return Unauthorized();
+        return Ok(await _mediator.Send(new GetMyAssignedTicketsQuery(userId), ct));
+    }
 
-        // --- Endpoint-uri ---
+    [HttpGet("{id:guid}")]
+    public async Task<IActionResult> GetTicketById(Guid id, CancellationToken ct)
+    {
+        var result = await _mediator.Send(new GetTicketDetailsQuery(id), ct);
+        return result != null ? Ok(result) : NotFound();
+    }
 
-        [HttpPost]
-        [ProducesResponseType(typeof(CreateTicketCommandResponseDto), StatusCodes.Status201Created)]
-        public async Task<IActionResult> CreateTicket([FromBody] CreateTicketCommandDto requestDto, CancellationToken cancellationToken)
-        {
-            var userId = GetUserId();
-            if (userId == Guid.Empty) return Unauthorized();
+    [HttpPost]
+    public async Task<IActionResult> CreateTicket([FromBody] CreateTicketCommandDto dto, CancellationToken ct)
+    {
+        var userId = GetUserId();
+        if (userId == Guid.Empty) return Unauthorized();
+        dto.ClientId = userId;
+        var result = await _mediator.Send(new CreateTicketCommand(dto), ct);
+        return CreatedAtAction(nameof(GetTicketById), new { id = result.Id }, result);
+    }
 
-            // Injectăm ClientId din Token în DTO
-            requestDto.ClientId = userId;
+    [HttpPut("{id:guid}/assign")]
+    [Authorize(Roles = "Admin,TechSupport")]
+    public async Task<IActionResult> AssignTicket(Guid id, CancellationToken ct)
+    {
+        var userId = GetUserId();
+        if (userId == Guid.Empty) return Unauthorized();
+        var result = await _mediator.Send(new AssignTicketCommand(new AssignTicketCommandDto { TicketId = id, TechnicianId = userId }), ct);
+        return Ok(result);
+    }
 
-            // Împachetăm DTO-ul în Comandă folosind numele corect al parametrului: CommandDto
-            var command = new CreateTicketCommand(requestDto);
+    [HttpPut("{id:guid}/close")]
+    [Authorize(Roles = "Admin,TechSupport")]
+    public async Task<IActionResult> CloseTicket(Guid id, [FromBody] CloseTicketCommandDto dto, CancellationToken ct)
+    {
+        dto.TicketId = id; 
 
-            var result = await _mediator.Send(command, cancellationToken);
-            return CreatedAtAction(nameof(GetTicketById), new { id = result.Id }, result);
-        }
+        var command = new CloseTicketCommand(dto);
 
-        [HttpGet("{id:guid}")]
-        public async Task<IActionResult> GetTicketById(Guid id, CancellationToken cancellationToken)
-        {
-            var result = await _mediator.Send(new GetTicketDetailsQuery(id), cancellationToken);
-            return result != null ? Ok(result) : NotFound();
-        }
+        var result = await _mediator.Send(command, ct);
+        return Ok(result);
+    }
 
-        [HttpPost("{id:guid}/messages")]
-        public async Task<IActionResult> AddMessage(Guid id, [FromBody] MessageRequest request, CancellationToken cancellationToken)
-        {
-            var userId = GetUserId();
-            if (userId == Guid.Empty) return Unauthorized();
+    [HttpPost("{id:guid}/messages")]
+    public async Task<IActionResult> AddMessage(Guid id, [FromBody] AddMessageCommandDto dto, CancellationToken ct)
+    {
+        dto.TicketId = id;
+        return Ok(await _mediator.Send(new AddMessageCommand(dto), ct));
+    }
 
-            var dto = new AddMessageCommandDto
-            {
-                TicketId = id,
-                AuthorId = userId,
-                Content = request.Content
-            };
-
-            var result = await _mediator.Send(new AddMessageCommand(dto), cancellationToken);
-            return CreatedAtAction(nameof(GetTicketMessages), new { id }, result);
-        }
-
-        [HttpGet("{id:guid}/messages")]
-        public async Task<IActionResult> GetTicketMessages(Guid id, CancellationToken cancellationToken)
-        {
-            var result = await _mediator.Send(new GetTicketMessagesQuery(id), cancellationToken);
-            return Ok(result);
-        }
-
-        [HttpGet("my-tickets")]
-        public async Task<IActionResult> GetMyTickets(CancellationToken cancellationToken)
-        {
-            var userId = GetUserId();
-            var result = await _mediator.Send(new GetClientTicketsQuery(userId), cancellationToken);
-            return Ok(result);
-        }
-
-        [HttpPut("{id:guid}/assign")]
-        [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> AssignTicket(Guid id, [FromBody] AssignTicketCommandDto dto, CancellationToken cancellationToken)
-        {
-            dto.TicketId = id;
-            var result = await _mediator.Send(new AssignTicketCommand(dto), cancellationToken);
-            return Ok(result);
-        }
-
-        [HttpPut("{id:guid}/status")]
-        [Authorize(Roles = "Admin,Technician")]
-        public async Task<IActionResult> ChangeStatus(Guid id, [FromBody] ChangeStatusCommandDto dto, CancellationToken cancellationToken)
-        {
-            dto.TicketId = id;
-            var result = await _mediator.Send(new ChangeStatusCommand(dto), cancellationToken);
-            return Ok(result);
-        }
-
-        [HttpPut("{id:guid}/close")]
-        public async Task<IActionResult> CloseTicket(Guid id, [FromBody] CloseTicketCommandDto dto, CancellationToken cancellationToken)
-        {
-            dto.TicketId = id;
-            var result = await _mediator.Send(new CloseTicketCommand(dto), cancellationToken);
-            return Ok(result);
-        }
-
-        // --- Helper Methods ---
-
-        private Guid GetUserId()
-        {
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
-                             ?? User.FindFirst("sub")?.Value;
-
-            return Guid.TryParse(userIdClaim, out var guid) ? guid : Guid.Empty;
-        }
+    private Guid GetUserId()
+    {
+        var claim = User.FindFirst(ClaimTypes.NameIdentifier) ?? User.FindFirst("sub");
+        return claim != null && Guid.TryParse(claim.Value, out var id) ? id : Guid.Empty;
     }
 }

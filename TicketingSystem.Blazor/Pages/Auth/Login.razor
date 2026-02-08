@@ -1,7 +1,9 @@
 ﻿@page "/login"
 @using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
 @using TicketingSystem.Blazor.Services
 @inject AuthService AuthService
+@inject AuthenticationStateProvider AuthStateProvider
 @inject NavigationManager Nav
 @attribute [AllowAnonymous]
 
@@ -19,7 +21,7 @@
                     </div>
                     <div class="mb-3">
                         <label>Parolă</label>
-                        <input @bind="password" type="password" class="form-control" />
+                        <input @bind="password" type="password" class="form-control" @onkeyup="HandleKeyUp" />
                     </div>
 
                     <button class="btn btn-primary w-100" @onclick="HandleLogin">Intră în cont</button>
@@ -48,10 +50,41 @@
         errorMessage = "";
         try
         {
+            // 1. AuthService face cererea la API și returnează string-ul Token-ului (sau null)
+            // Notă: Modifică AuthService.Login să returneze string (token) în loc de bool dacă poți,
+            // sau asigură-te că stochezi token-ul în AuthService.
+
             bool isSuccess = await AuthService.Login(email, password);
-            if (isSuccess) Nav.NavigateTo("/tickets");
-            else errorMessage = "Email sau parolă incorectă!";
+
+            if (isSuccess)
+            {
+                // 2. Notificăm provider-ul de stare că suntem autentificați.
+                // Facem cast la clasa noastră custom pentru a accesa metoda MarkUserAsAuthenticated
+                var authProvider = (ApiAuthenticationStateProvider)AuthStateProvider;
+
+                // Luăm token-ul proaspăt salvat (asigură-te că AuthService îl pune în LocalStorage înainte)
+                await authProvider.GetAuthenticationStateAsync();
+
+                Nav.NavigateTo("/tickets");
+            }
+            else
+            {
+                errorMessage = "Email sau parolă incorectă!";
+            }
         }
-        catch { errorMessage = "Eroare de conexiune cu serverul."; }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            errorMessage = "Eroare de conexiune cu serverul.";
+        }
+    }
+
+    // Mic bonus: Login la apăsarea tastei Enter
+    private async Task HandleKeyUp(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await HandleLogin();
+        }
     }
 }

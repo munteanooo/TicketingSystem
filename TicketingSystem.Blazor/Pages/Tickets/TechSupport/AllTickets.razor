@@ -1,0 +1,71 @@
+﻿@page "/admin/all"
+@using TicketingSystem.Application.Tickets.Queries.GetClientTickets
+@using TicketingSystem.Blazor.Services.Interfaces
+@attribute [Authorize(Roles = "Admin,TechSupport")]
+@inject ITicketService TicketService
+@inject NavigationManager Nav
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-8">
+    <MudText Typo="Typo.h4" Class="mb-6">Istoric General Tichete</MudText>
+
+    <MudTable Items="@_tickets" Hover="true" Elevation="2" Loading="@_loading" Filter="new Func<GetClientTicketsQueryResponseDto, bool>(FilterFunc)">
+        <ToolBarContent>
+            <MudText Typo="Typo.h6">Toate Tichetele</MudText>
+            <MudSpacer />
+            <MudTextField @bind-Value="_searchString" Placeholder="Caută după titlu sau nr..." Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+        </ToolBarContent>
+        <HeaderContent>
+            <MudTh>Nr.</MudTh>
+            <MudTh>Titlu</MudTh>
+            <MudTh>Status</MudTh>
+            <MudTh>Data Creării</MudTh>
+            <MudTh Style="text-align:right">Acțiuni</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Nr.">#@context.TicketNumber</MudTd>
+            <MudTd DataLabel="Titlu">@context.Title</MudTd>
+            <MudTd DataLabel="Status">
+                <MudChip T="string" Color="@GetStatusColor(context.Status)" Size="Size.Small">@context.Status</MudChip>
+            </MudTd>
+            <MudTd DataLabel="Data">@context.CreatedAt.ToString("dd/MM/yyyy HH:mm")</MudTd>
+            <MudTd Style="text-align:right">
+                <MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small"
+                           OnClick="@(() => Nav.NavigateTo($"/tickets/details/{context.Id}"))">
+                    Vezi Detalii
+                </MudButton>
+            </MudTd>
+        </RowTemplate>
+        <PagerContent>
+            <MudTablePager />
+        </PagerContent>
+    </MudTable>
+</MudContainer>
+
+@code {
+    private List<GetClientTicketsQueryResponseDto> _tickets = new();
+    private bool _loading = true;
+    private string _searchString = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var result = await TicketService.GetTickets();
+            if (result != null) _tickets = result;
+        }
+        finally { _loading = false; }
+    }
+
+    private bool FilterFunc(GetClientTicketsQueryResponseDto element) =>
+        string.IsNullOrWhiteSpace(_searchString) ||
+        element.Title.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ||
+        element.TicketNumber.ToString().Contains(_searchString);
+
+    private Color GetStatusColor(string status) => status switch
+    {
+        "Open" => Color.Info,
+        "InProgress" => Color.Warning,
+        "Closed" => Color.Default,
+        _ => Color.Primary
+    };
+}

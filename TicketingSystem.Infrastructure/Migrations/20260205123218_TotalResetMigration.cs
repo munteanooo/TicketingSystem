@@ -7,7 +7,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace TicketingSystem.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class AddIdentityTables : Migration
+    public partial class TotalResetMigration : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -163,7 +163,7 @@ namespace TicketingSystem.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Ticket",
+                name: "Tickets",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -185,7 +185,7 @@ namespace TicketingSystem.Infrastructure.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Ticket", x => x.Id);
+                    table.PrimaryKey("PK_Tickets", x => x.Id);
                     table.ForeignKey(
                         name: "FK_Tickets_Users_ClientId",
                         column: x => x.ClientId,
@@ -201,7 +201,7 @@ namespace TicketingSystem.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "TicketMessage",
+                name: "TicketMessages",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -212,11 +212,11 @@ namespace TicketingSystem.Infrastructure.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_TicketMessage", x => x.Id);
+                    table.PrimaryKey("PK_TicketMessages", x => x.Id);
                     table.ForeignKey(
                         name: "FK_Messages_Tickets_TicketId",
                         column: x => x.TicketId,
-                        principalTable: "Ticket",
+                        principalTable: "Tickets",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
@@ -265,50 +265,30 @@ namespace TicketingSystem.Infrastructure.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_Ticket_TicketNumber",
-                table: "Ticket",
-                column: "TicketNumber",
-                unique: true);
+                name: "IX_TicketMessages_AuthorId",
+                table: "TicketMessages",
+                column: "AuthorId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_TicketMessages_TicketId",
+                table: "TicketMessages",
+                column: "TicketId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Tickets_AssignedTechnicianId",
-                table: "Ticket",
+                table: "Tickets",
                 column: "AssignedTechnicianId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Tickets_ClientId",
-                table: "Ticket",
+                table: "Tickets",
                 column: "ClientId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Tickets_CreatedAt",
-                table: "Ticket",
-                column: "CreatedAt");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Tickets_Priority",
-                table: "Ticket",
-                column: "Priority");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Tickets_Status",
-                table: "Ticket",
-                column: "Status");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Messages_AuthorId",
-                table: "TicketMessage",
-                column: "AuthorId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Messages_CreatedAt",
-                table: "TicketMessage",
-                column: "CreatedAt");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Messages_TicketId",
-                table: "TicketMessage",
-                column: "TicketId");
+                name: "IX_Tickets_TicketNumber",
+                table: "Tickets",
+                column: "TicketNumber",
+                unique: true);
         }
 
         /// <inheritdoc />
@@ -330,13 +310,13 @@ namespace TicketingSystem.Infrastructure.Migrations
                 name: "AspNetUserTokens");
 
             migrationBuilder.DropTable(
-                name: "TicketMessage");
+                name: "TicketMessages");
 
             migrationBuilder.DropTable(
                 name: "AspNetRoles");
 
             migrationBuilder.DropTable(
-                name: "Ticket");
+                name: "Tickets");
 
             migrationBuilder.DropTable(
                 name: "AspNetUsers");

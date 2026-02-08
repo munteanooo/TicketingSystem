@@ -1,65 +1,82 @@
-﻿using System.Net.Http.Json;
-using Blazored.LocalStorage;
+﻿using Blazored.LocalStorage;
 using Microsoft.AspNetCore.Components.Authorization;
-using TicketingSystem.Application.Contracts.Identity;
+using System.Net.Http.Json;
+using System.Net.Http.Headers;
+using TicketingSystem.Blazor.Services.Interfaces;
 
 namespace TicketingSystem.Blazor.Services;
 
-public class AuthService
+public class AuthService : IAuthService
 {
     private readonly HttpClient _httpClient;
-    private readonly ILocalStorageService _localStorage;
-    private readonly AuthenticationStateProvider _authStateProvider;
+    private readonly AuthenticationStateProvider _authenticationStateProvider;
 
     public AuthService(HttpClient httpClient,
-                       ILocalStorageService localStorage,
-                       AuthenticationStateProvider authStateProvider)
+                       AuthenticationStateProvider authenticationStateProvider)
     {
         _httpClient = httpClient;
-        _localStorage = localStorage;
-        _authStateProvider = authStateProvider;
+        _authenticationStateProvider = authenticationStateProvider;
     }
 
-    public async Task<bool> Login(string email, string password)
+    public async Task<bool> Register(string fullName, string email, string password, string role)
     {
-        var loginRequest = new LoginRequest { Email = email, Password = password };
-        var response = await _httpClient.PostAsJsonAsync("api/auth/login", loginRequest);
-
-        if (response.IsSuccessStatusCode)
-        {
-            var result = await response.Content.ReadFromJsonAsync<AuthResponse>();
-
-            if (result != null && !string.IsNullOrEmpty(result.Token))
-            {
-                await _localStorage.SetItemAsync("authToken", result.Token);
-
-                var customAuthStateProvider = (ApiAuthenticationStateProvider)_authStateProvider;
-                customAuthStateProvider.MarkUserAsAuthenticated(result.Token);
-
-                return true;
-            }
-        }
-        return false;
-    }
-
-    // Am adaugat parametrul role (default "Client")
-    public async Task<bool> Register(string fullName, string email, string password, string role = "Client")
-    {
-        var registerRequest = new
+        var registerModel = new
         {
             FullName = fullName,
             Email = email,
             Password = password,
             Role = role
         };
-        var response = await _httpClient.PostAsJsonAsync("api/auth/register", registerRequest);
-        return response.IsSuccessStatusCode;
+
+        try
+        {
+            var response = await _httpClient.PostAsJsonAsync("api/auth/register", registerModel);
+            return response.IsSuccessStatusCode;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    public async Task<bool> Login(string email, string password)
+    {
+        var loginModel = new { Email = email, Password = password };
+
+        try
+        {
+            var response = await _httpClient.PostAsJsonAsync("api/auth/login", loginModel);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<LoginResponse>();
+                if (result != null && !string.IsNullOrEmpty(result.Token))
+                {
+                    var customAuthStateProvider = (ApiAuthenticationStateProvider)_authenticationStateProvider;
+                    await customAuthStateProvider.MarkUserAsAuthenticated(result.Token);
+
+                    _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("bearer", result.Token);
+
+                    return true;
+                }
+            }
+            return false;
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     public async Task Logout()
     {
-        await _localStorage.RemoveItemAsync("authToken");
-        var customAuthStateProvider = (ApiAuthenticationStateProvider)_authStateProvider;
-        customAuthStateProvider.MarkUserAsLoggedOut();
+        var customAuthStateProvider = (ApiAuthenticationStateProvider)_authenticationStateProvider;
+        await customAuthStateProvider.MarkUserAsLoggedOut();
+        _httpClient.DefaultRequestHeaders.Authorization = null;
     }
+}
+
+public class LoginResponse
+{
+    public string Token { get; set; } = string.Empty;
 }

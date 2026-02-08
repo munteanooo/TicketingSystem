@@ -1,0 +1,110 @@
+﻿@page "/admin/unassigned"
+@using TicketingSystem.Application.Tickets.Queries.GetTechTickets
+@attribute [Authorize(Roles = "Admin,TechSupport")] 
+@inject ITicketService TicketService
+@inject ISnackbar Snackbar
+@inject NavigationManager Nav
+
+<MudText Typo="Typo.h4">Tichete Nealocate</MudText>
+
+@if (_isLoading)
+{
+    <MudProgressCircular Color="Color.Default" Indeterminate="true" />
+}
+else if (_errorMessage != null)
+{
+    <MudAlert Severity="Severity.Error">@_errorMessage</MudAlert>
+}
+else
+{
+    <MudTable Items="@_tickets" Hover="true" Breakpoint="Breakpoint.Sm">
+        <HeaderContent>
+            <MudTh>Titlu</MudTh>
+            <MudTh>Client</MudTh>
+            <MudTh>Data</MudTh>
+            <MudTh>Acțiuni</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Titlu">@context.Title</MudTd>
+            <MudTd DataLabel="Nr. Tichet">@context.TicketNumber</MudTd>
+            <MudTd DataLabel="Data">@context.CreatedAt.ToString("dd/MM/yyyy")</MudTd>
+            <MudTd>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" 
+                           OnClick="@(() => AssignToMe(context.Id))">
+                    Preia Tichet
+                </MudButton>
+            </MudTd>
+        </RowTemplate>
+    </MudTable>
+}
+
+@code {
+    private List<GetTechTicketsQueryResponseDto>? _tickets;
+    private string? _errorMessage;
+    private bool _isLoading;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _isLoading = true;
+        _errorMessage = null;
+
+        try
+        {
+            _tickets = await TicketService.GetUnassignedTickets();
+        }
+        catch (HttpRequestException)
+        {
+            _errorMessage = "Eroare la conectarea cu serverul.";
+            Snackbar.Add(_errorMessage, Severity.Error);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            _errorMessage = "Nu aveți permisiunile necesare.";
+            Snackbar.Add(_errorMessage, Severity.Warning);
+            // Optionally redirect
+            Nav.NavigateTo("/");
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = "Eroare la încărcarea ticheteleor.";
+            Console.WriteLine(ex);
+            Snackbar.Add(_errorMessage, Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task AssignToMe(Guid ticketId)
+    {
+        try
+        {
+            var success = await TicketService.AssignTicket(ticketId);
+            if (success)
+            {
+                Snackbar.Add("Tichet preluat cu succes.", Severity.Success);
+                _tickets = await TicketService.GetUnassignedTickets();
+                StateHasChanged();
+            }
+            else
+            {
+                Snackbar.Add("Eroare la preluarea tichetului.", Severity.Error);
+            }
+        }
+        catch (HttpRequestException)
+        {
+            Snackbar.Add("Eroare la conectarea cu serverul.", Severity.Error);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            Snackbar.Add("Nu aveți permisiunile necesare pentru a prelua tichetul.", Severity.Warning);
+            Nav.NavigateTo("/");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            Snackbar.Add("Eroare neașteptată.", Severity.Error);
+        }
+    }
+}

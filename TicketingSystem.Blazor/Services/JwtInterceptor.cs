@@ -14,12 +14,27 @@ public class JwtInterceptor : DelegatingHandler
 
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
-        var token = await _localStorage.GetItemAsStringAsync("authToken");
+        // 1. Verificăm dacă request-ul nu este pentru Login/Register
+        var isAuthRequest = request.RequestUri?.AbsolutePath.Contains("/api/auth/", StringComparison.OrdinalIgnoreCase) ?? false;
 
-        if (!string.IsNullOrEmpty(token))
+        if (!isAuthRequest)
         {
-            token = token.Trim('"');    
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            try
+            {
+                var token = await _localStorage.GetItemAsStringAsync("authToken", cancellationToken);
+
+                if (!string.IsNullOrEmpty(token))
+                {
+                    // Curățăm ghilimelele reziduale dacă token-ul a fost salvat prin JSON.Serialize
+                    token = token.Trim('"');
+                    request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                }
+            }
+            catch (Exception ex)
+            {
+                // În caz de eroare la citirea storage-ului, logăm eroarea
+                Console.WriteLine($"Interceptor Error: {ex.Message}");
+            }
         }
 
         return await base.SendAsync(request, cancellationToken);

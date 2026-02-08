@@ -33,11 +33,14 @@ namespace TicketingSystem.API.Controllers
                     new Claim(ClaimTypes.Name, user.Email!),
                     new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                     new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                    new Claim("FullName", user.FullName),
-                    new Claim(ClaimTypes.Role, user.Role)
+                    new Claim("FullName", user.FullName ?? ""),
+                    new Claim(ClaimTypes.Role, user.Role ?? "Client")
                 };
 
-                var authSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JwtSettings:Key"]!));
+                var jwtKey = _configuration["JwtSettings:Key"];
+                if (string.IsNullOrEmpty(jwtKey)) return StatusCode(500, "JWT Key is not configured.");
+
+                var authSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
 
                 var token = new JwtSecurityToken(
                     issuer: _configuration["JwtSettings:Issuer"],
@@ -65,34 +68,31 @@ namespace TicketingSystem.API.Controllers
             if (userExists != null)
                 return BadRequest(new { Message = "Utilizatorul există deja!" });
 
-            // Validăm rolul: dacă e null sau gol, punem default "Client"
             var userRole = string.IsNullOrWhiteSpace(model.Role) ? "Client" : model.Role;
 
             var user = new User
             {
+                Id = Guid.NewGuid(), // FORȚĂM un ID nou pentru a evita eroarea de PK duplicate (0000...000)
                 UserName = model.Email,
                 Email = model.Email,
                 FullName = model.FullName,
-                Role = userRole, // Folosim rolul primit din DTO
+                Role = userRole,
                 CreatedAt = DateTime.UtcNow,
-                EmailConfirmed = true // Setăm pe true pentru a evita probleme de confirmare la testare
+                EmailConfirmed = true
             };
 
             var result = await _userManager.CreateAsync(user, model.Password);
 
             if (result.Succeeded)
             {
-                // Opțional: Dacă folosești și sistemul de Roluri clasic din Identity:
-                // await _userManager.AddToRoleAsync(user, userRole);
-
-                return Ok(new { Message = "User created successfully" });
+                return Ok(new { Message = "User created successfully", UserId = user.Id });
             }
 
-            return BadRequest(result.Errors);
+            return BadRequest(new { Errors = result.Errors });
         }
     }
 
-    // DTO-uri actualizate
+    // DTOs
     public record LoginDto(string Email, string Password);
     public record RegisterDto(string Email, string Password, string FullName, string Role);
 }
