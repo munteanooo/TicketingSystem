@@ -17,17 +17,20 @@ builder.Services.AddMudServices();
 builder.Services.AddBlazoredLocalStorage();
 
 // --- 2. Infrastructură HTTP & Securitate ---
-// IMPORTANT: Înregistrează interceptorul ca Transient
+
+// Citim adresa din appsettings.json (secțiunea ApiSettings:BaseAddress)
+// Blazor va căuta automat fișierul în wwwroot
+var apiBaseAddress = builder.Configuration["ApiSettings:BaseAddress"]
+                     ?? "https://localhost:7176/"; 
+
 builder.Services.AddTransient<JwtInterceptor>();
 
 builder.Services.AddHttpClient("TicketingAPI", client =>
 {
-    // Portul 7176 trebuie să corespundă cu launchSettings.json din API (https)
-    client.BaseAddress = new Uri("https://localhost:7176/");
+     client.BaseAddress = new Uri(apiBaseAddress);
 })
 .AddHttpMessageHandler<JwtInterceptor>();
 
-// Înregistrează HttpClient-ul implicit pentru a fi folosit în servicii
 builder.Services.AddScoped(sp =>
     sp.GetRequiredService<IHttpClientFactory>().CreateClient("TicketingAPI"));
 
@@ -38,7 +41,7 @@ builder.Services.AddScoped<AuthenticationStateProvider>(sp =>
     sp.GetRequiredService<ApiAuthenticationStateProvider>());
 
 // --- 4. Servicii de Business ---
-builder.Services.AddScoped<AuthService>(); // Asigură-te că AuthService folosește HttpClient-ul de mai sus
+builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<ITicketService, TicketService>();
 
 await builder.Build().RunAsync();
