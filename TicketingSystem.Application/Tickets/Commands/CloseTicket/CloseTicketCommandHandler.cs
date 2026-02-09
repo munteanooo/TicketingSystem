@@ -9,7 +9,7 @@ public class CloseTicketCommandHandler : IRequestHandler<CloseTicketCommand, Clo
 {
     private readonly ITicketRepository _ticketRepository;
     private readonly ICurrentUser _currentUser;
-    private readonly IApplicationDbContext _context; // Adăugat pentru consistență dacă e nevoie
+    private readonly IApplicationDbContext _context; 
 
     public CloseTicketCommandHandler(ITicketRepository ticketRepository, ICurrentUser currentUser, IApplicationDbContext context)
     {
