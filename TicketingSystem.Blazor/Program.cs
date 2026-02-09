@@ -16,10 +16,7 @@ builder.RootComponents.Add<HeadOutlet>("head::after");
 builder.Services.AddMudServices();
 builder.Services.AddBlazoredLocalStorage();
 
-// --- 2. Infrastructură HTTP & Securitate ---
 
-// Citim adresa din appsettings.json (secțiunea ApiSettings:BaseAddress)
-// Blazor va căuta automat fișierul în wwwroot
 var apiBaseAddress = builder.Configuration["ApiSettings:BaseAddress"]
                      ?? "https://localhost:7176/"; 
 
