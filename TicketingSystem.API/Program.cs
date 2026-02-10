@@ -58,13 +58,13 @@ builder.Services.AddAuthentication(options =>
      };
 });
 
-// --- 3. Configurare CORS (MODIFICATĂ) ---
+// --- 3. Configurare CORS ---
 builder.Services.AddCors(options =>
 {
      options.AddPolicy("BlazorPolicy", policy =>
          policy.WithOrigins(
                  "https://localhost:7119",
-                 "https://ticketingsystem-ene4cdd9atdzdtd3.westeurope-01.azurewebsites.net"
+                 "https://ticketingsystem-ene4cdd9atdzdtd3.westeurope-01.azurewebsites.net" // URL-ul Blazor
                )
                .AllowAnyMethod()
                .AllowAnyHeader()
@@ -77,7 +77,7 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// --- 4. Seed Data & Migrations ---
+// --- 4. Seed Data & Migrations (Auto-Run pe Azure) ---
 using (var scope = app.Services.CreateScope())
 {
      var services = scope.ServiceProvider;
@@ -100,7 +100,6 @@ using (var scope = app.Services.CreateScope())
 
           var adminEmail = "admin@test.com";
           var adminUser = await userManager.FindByEmailAsync(adminEmail);
-
           if (adminUser == null)
           {
                var newAdmin = new User
@@ -127,17 +126,19 @@ using (var scope = app.Services.CreateScope())
      }
 }
 
-// --- 5. Pipeline HTTP (ORDINE CRITICĂ) ---
-if (app.Environment.IsDevelopment())
-{
-     app.UseSwagger();
-     app.UseSwaggerUI();
-}
+// --- 5. Pipeline HTTP (ORDINE CORECTATĂ) ---
+
+// Swagger ACTIVAT și pe Production (Azure) pentru testare
+app.UseSwagger();
+app.UseSwaggerUI(c => {
+     c.SwaggerEndpoint("/swagger/v1/swagger.json", "Ticketing System API V1");
+     c.RoutePrefix = "swagger";
+});
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseHttpsRedirection();
 
-// CORS trebuie să fie după HttpsRedirection și înainte de Routing/Auth
+// CORS trebuie să fie exact aici
 app.UseCors("BlazorPolicy");
 
 app.UseRouting();
