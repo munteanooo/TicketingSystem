@@ -58,13 +58,13 @@ builder.Services.AddAuthentication(options =>
      };
 });
 
-// --- 3. CORS (Adaugat "*" pentru testare rapida) ---
+// --- 3. CORS ---
 builder.Services.AddCors(options =>
 {
      options.AddPolicy("BlazorPolicy", policy =>
-         policy.AllowAnyOrigin() // Temporar, pana rezolvam conexiunea
-               .AllowAnyMethod()
-               .AllowAnyHeader());
+          policy.AllowAnyOrigin()
+                .AllowAnyMethod()
+                .AllowAnyHeader());
 });
 
 builder.Services.AddControllers();
@@ -75,32 +75,32 @@ var app = builder.Build();
 
 // --- 4. Pipeline HTTP (ORDINEA ESTE CRITICĂ) ---
 
-// Forțăm Swagger să fie disponibil oriunde
-app.UseSwagger(c => {
-     c.RouteTemplate = "swagger/{documentName}/swagger.json";
-});
+app.UseMiddleware<ExceptionHandlingMiddleware>();
 
+// Configurăm Swagger pe o rută specifică, nu pe cea principală
+app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
      c.SwaggerEndpoint("/swagger/v1/swagger.json", "Ticketing API V1");
-     c.RoutePrefix = string.Empty; // Swagger va fi DIRECT la adresa de baza (fara /swagger)
+     // NU setăm RoutePrefix la string.Empty pentru a lăsa ruta "/" liberă pentru Blazor
 });
 
-app.UseMiddleware<ExceptionHandlingMiddleware>();
-
-// Dacă primești 405 constant pe Azure, uneori HttpsRedirection face probleme cu Proxy-ul Azure
-// app.UseHttpsRedirection(); 
+app.UseBlazorFrameworkFiles();
+app.UseStaticFiles();
 
 app.UseRouting();
-
 app.UseCors("BlazorPolicy");
 
 app.UseAuthentication();
 app.UseAuthorization();
 
+// Mapăm Controller-ele API
 app.MapControllers();
 
-// Adaugă o rută de test directă pentru a vedea dacă aplicația trăiește
+// Rută de test pentru a verifica starea serverului
 app.MapGet("/test-live", () => "API-ul este ONLINE!");
+
+// FALLBACK: Orice rută care nu este de API va fi direcționată către index.html din Blazor
+app.MapFallbackToFile("index.html");
 
 app.Run();
