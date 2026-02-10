@@ -14,7 +14,7 @@ using TicketingSystem.Infrastructure.MediatR;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// --- 1. Servicii de Bază ---
+// --- 1. Servicii ---
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 
@@ -34,7 +34,7 @@ builder.Services.AddIdentity<User, IdentityRole<Guid>>(options =>
 .AddEntityFrameworkStores<TicketingSystemDbContext>()
 .AddDefaultTokenProviders();
 
-// --- 2. Autentificare JWT ---
+// --- 2. JWT ---
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
 var secretKey = jwtSettings["Key"] ?? "O_Cheie_Super_Secreta_Si_Lunga_De_32_Caractere";
 var key = Encoding.ASCII.GetBytes(secretKey);
@@ -58,17 +58,13 @@ builder.Services.AddAuthentication(options =>
      };
 });
 
-// --- 3. Configurare CORS ---
+// --- 3. CORS (Adaugat "*" pentru testare rapida) ---
 builder.Services.AddCors(options =>
 {
      options.AddPolicy("BlazorPolicy", policy =>
-         policy.WithOrigins(
-                 "https://localhost:7119",
-                 "https://ticketingsystem-ene4cdd9atdzdtd3.westeurope-01.azurewebsites.net"
-               )
+         policy.AllowAnyOrigin() // Temporar, pana rezolvam conexiunea
                .AllowAnyMethod()
-               .AllowAnyHeader()
-               .AllowCredentials());
+               .AllowAnyHeader());
 });
 
 builder.Services.AddControllers();
@@ -77,72 +73,34 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// --- 4. Migrări și Seed (Execuție la Startup) ---
-using (var scope = app.Services.CreateScope())
-{
-     var services = scope.ServiceProvider;
-     try
-     {
-          var context = services.GetRequiredService<TicketingSystemDbContext>();
-          await context.Database.MigrateAsync();
+// --- 4. Pipeline HTTP (ORDINEA ESTE CRITICĂ) ---
 
-          var userManager = services.GetRequiredService<UserManager<User>>();
-          var roleManager = services.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
+// Forțăm Swagger să fie disponibil oriunde
+app.UseSwagger(c => {
+     c.RouteTemplate = "swagger/{documentName}/swagger.json";
+});
 
-          string[] roleNames = { "Admin", "TechSupport", "Client" };
-          foreach (var roleName in roleNames)
-          {
-               if (!await roleManager.RoleExistsAsync(roleName))
-               {
-                    await roleManager.CreateAsync(new IdentityRole<Guid>(roleName));
-               }
-          }
-
-          var adminEmail = "admin@test.com";
-          var adminUser = await userManager.FindByEmailAsync(adminEmail);
-          if (adminUser == null)
-          {
-               var newAdmin = new User
-               {
-                    Id = Guid.NewGuid(),
-                    UserName = adminEmail,
-                    Email = adminEmail,
-                    FullName = "Admin System",
-                    Role = "Admin",
-                    IsActive = true,
-                    CreatedAt = DateTime.UtcNow,
-                    EmailConfirmed = true
-               };
-               var result = await userManager.CreateAsync(newAdmin, "Password123!");
-               if (result.Succeeded) await userManager.AddToRoleAsync(newAdmin, "Admin");
-          }
-     }
-     catch (Exception ex)
-     {
-          Console.WriteLine($"--> Eroare Startup/Seed: {ex.Message}");
-     }
-}
-
-// --- 5. Pipeline HTTP (ORDINE REVIZUITĂ) ---
-
-// ACTIVĂM Swagger indiferent de mediu pentru a putea testa pe Azure
-app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
-     c.SwaggerEndpoint("/swagger/v1/swagger.json", "Ticketing System API V1");
-     c.RoutePrefix = "swagger"; // Swagger va fi la adresa /swagger
+     c.SwaggerEndpoint("/swagger/v1/swagger.json", "Ticketing API V1");
+     c.RoutePrefix = string.Empty; // Swagger va fi DIRECT la adresa de baza (fara /swagger)
 });
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
-app.UseHttpsRedirection();
 
-app.UseCors("BlazorPolicy");
+// Dacă primești 405 constant pe Azure, uneori HttpsRedirection face probleme cu Proxy-ul Azure
+// app.UseHttpsRedirection(); 
 
 app.UseRouting();
+
+app.UseCors("BlazorPolicy");
 
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// Adaugă o rută de test directă pentru a vedea dacă aplicația trăiește
+app.MapGet("/test-live", () => "API-ul este ONLINE!");
 
 app.Run();

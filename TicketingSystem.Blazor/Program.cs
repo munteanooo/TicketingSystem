@@ -16,9 +16,9 @@ builder.RootComponents.Add<HeadOutlet>("head::after");
 builder.Services.AddMudServices();
 builder.Services.AddBlazoredLocalStorage();
 
-
-var apiBaseAddress = builder.Configuration["ApiSettings:BaseAddress"]
-                     ?? "https://localhost:7176/"; 
+// --- 2. Configurare HTTP & API ---
+// Am setat direct URL-ul de Azure pentru a evita eroarea 404/Connection Refused
+var apiBaseAddress = "https://ticketingsystem-ene4cdd9atdzdtd3.westeurope-01.azurewebsites.net/";
 
 builder.Services.AddTransient<JwtInterceptor>();
 
@@ -28,6 +28,7 @@ builder.Services.AddHttpClient("TicketingAPI", client =>
 })
 .AddHttpMessageHandler<JwtInterceptor>();
 
+// Înregistrăm HttpClient-ul principal care va fi folosit de servicii
 builder.Services.AddScoped(sp =>
     sp.GetRequiredService<IHttpClientFactory>().CreateClient("TicketingAPI"));
 
