@@ -64,7 +64,7 @@ builder.Services.AddCors(options =>
      options.AddPolicy("BlazorPolicy", policy =>
          policy.WithOrigins(
                  "https://localhost:7119",
-                 "https://ticketingsystem-ene4cdd9atdzdtd3.westeurope-01.azurewebsites.net" // URL-ul Blazor
+                 "https://ticketingsystem-ene4cdd9atdzdtd3.westeurope-01.azurewebsites.net"
                )
                .AllowAnyMethod()
                .AllowAnyHeader()
@@ -77,7 +77,7 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// --- 4. Seed Data & Migrations (Auto-Run pe Azure) ---
+// --- 4. Migrări și Seed (Execuție la Startup) ---
 using (var scope = app.Services.CreateScope())
 {
      var services = scope.ServiceProvider;
@@ -114,31 +114,28 @@ using (var scope = app.Services.CreateScope())
                     EmailConfirmed = true
                };
                var result = await userManager.CreateAsync(newAdmin, "Password123!");
-               if (result.Succeeded)
-               {
-                    await userManager.AddToRoleAsync(newAdmin, "Admin");
-               }
+               if (result.Succeeded) await userManager.AddToRoleAsync(newAdmin, "Admin");
           }
      }
      catch (Exception ex)
      {
-          Console.WriteLine($"--> Eroare Seed: {ex.Message}");
+          Console.WriteLine($"--> Eroare Startup/Seed: {ex.Message}");
      }
 }
 
-// --- 5. Pipeline HTTP (ORDINE CORECTATĂ) ---
+// --- 5. Pipeline HTTP (ORDINE REVIZUITĂ) ---
 
-// Swagger ACTIVAT și pe Production (Azure) pentru testare
+// ACTIVĂM Swagger indiferent de mediu pentru a putea testa pe Azure
 app.UseSwagger();
-app.UseSwaggerUI(c => {
+app.UseSwaggerUI(c =>
+{
      c.SwaggerEndpoint("/swagger/v1/swagger.json", "Ticketing System API V1");
-     c.RoutePrefix = "swagger";
+     c.RoutePrefix = "swagger"; // Swagger va fi la adresa /swagger
 });
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseHttpsRedirection();
 
-// CORS trebuie să fie exact aici
 app.UseCors("BlazorPolicy");
 
 app.UseRouting();
