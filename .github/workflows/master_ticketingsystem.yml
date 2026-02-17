@@ -13,7 +13,8 @@ jobs:
       contents: read
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       - name: Set up .NET Core
         uses: actions/setup-dotnet@v4
@@ -49,6 +50,9 @@ jobs:
       contents: read
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Download artifact
         uses: actions/download-artifact@v4
         with:
@@ -72,5 +76,5 @@ jobs:
       - name: Deploy Blazor to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'TicketingSystem'
+          app-name: 'ticketingsystem-blazor'
           package: ./output/blazor
