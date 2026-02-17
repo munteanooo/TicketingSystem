@@ -55,6 +55,8 @@ jobs:
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'TicketingSystem'
-          package: ./TicketingSystem.Blazor\bin\Debug\net9.0\wwwroot
+          package: ./output/blazor/publish
+
+
 
 
