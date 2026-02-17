@@ -19,7 +19,7 @@ builder.Services.AddBlazoredLocalStorage();
 // --- 2. Configurare HTTP & API ---
 // ATENȚIE: Am actualizat URL-ul cu cel din Swagger-ul tău recent
 var apiBaseAddress = builder.Configuration["ApiSettings:BaseAddress"]
-                     ?? "https://ticketingsystem-api-hudhbxczcdf7h2dh.westeurope-01.azurewebsites.net";
+                     ?? "https://ticketingsystem-api-hudhbxczcdf7h2dh.westeurope-01.azurewebsites.net/";
 
 if (!apiBaseAddress.EndsWith("/")) apiBaseAddress += "/";
 
