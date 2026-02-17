@@ -23,6 +23,7 @@ builder.Services.AddScoped<IApplicationDbContext>(provider =>
 
 builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(UnitOfWorkBehavior<,>));
 
+// --- 2. Identity ---
 builder.Services.AddIdentity<User, IdentityRole<Guid>>(options =>
 {
      options.Password.RequireDigit = false;
@@ -34,7 +35,7 @@ builder.Services.AddIdentity<User, IdentityRole<Guid>>(options =>
 .AddEntityFrameworkStores<TicketingSystemDbContext>()
 .AddDefaultTokenProviders();
 
-// --- 2. JWT ---
+// --- 3. JWT ---
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
 var secretKey = jwtSettings["Key"] ?? "O_Cheie_Super_Secreta_Si_Lunga_De_32_Caractere";
 var key = Encoding.ASCII.GetBytes(secretKey);
@@ -58,49 +59,46 @@ builder.Services.AddAuthentication(options =>
      };
 });
 
-// --- 3. CORS ---
+// --- 4. CORS ---
 builder.Services.AddCors(options =>
 {
      options.AddPolicy("BlazorPolicy", policy =>
-          policy.AllowAnyOrigin()
-                .AllowAnyMethod()
-                .AllowAnyHeader());
+          policy.WithOrigins(
+                "https://localhost:5001", // portul Blazor client
+                "https://ticketingsystem-api-hudhbxczcdf7h2dh.westeurope-01.azurewebsites.net" // Azure Frontend
+          )
+          .AllowAnyHeader()
+          .AllowAnyMethod());
 });
 
+// --- 5. Alte servicii ---
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// --- 4. Pipeline HTTP (ORDINEA ESTE CRITICĂ) ---
-
+// --- 6. Middleware ---
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
-// Configurăm Swagger pe o rută specifică, nu pe cea principală
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
      c.SwaggerEndpoint("/swagger/v1/swagger.json", "Ticketing API V1");
-     // NU setăm RoutePrefix la string.Empty pentru a lăsa ruta "/" liberă pentru Blazor
 });
 
 app.UseBlazorFrameworkFiles();
 app.UseStaticFiles();
 
 app.UseRouting();
-app.UseCors("BlazorPolicy");
 
+app.UseCors("BlazorPolicy");  // înainte de Authentication/Authorization
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Mapăm Controller-ele API
 app.MapControllers();
 
-// Rută de test pentru a verifica starea serverului
-app.MapGet("/test-live", () => "API-ul este ONLINE!");
-
-// FALLBACK: Orice rută care nu este de API va fi direcționată către index.html din Blazor
+// Fallback Blazor
 app.MapFallbackToFile("index.html");
 
 app.Run();
