@@ -66,6 +66,22 @@ artifacts/
 # ASP.NET Scaffolding
 ScaffoldingReadMe.txt
 
+# API secrets
+TicketingSystem.API/appsettings.Development.json
+TicketingSystem.API/appsettings.Production.json
+
+# Dacă ai fișiere locale cu JWT sau DB
+*.local.json
+*.secret.json
+
+# Blazor WebAssembly local dev
+TicketingSystem.Blazor/wwwroot/appsettings.Development.json
+
+bin/
+obj/
+*.publishproj
+*.azurePubxml
+
 # StyleCop
 StyleCopReport.xml
 
