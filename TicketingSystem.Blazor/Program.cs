@@ -17,9 +17,9 @@ builder.Services.AddMudServices();
 builder.Services.AddBlazoredLocalStorage();
 
 // --- 2. Configurare HTTP & API ---
-// Citim adresa din appsettings.json, iar dacă lipsește, folosim adresa ta de Azure
+// Citim adresa din appsettings.json, iar dacă lipsește, folosim adresa ta live de Azure
 var apiBaseAddress = builder.Configuration["ApiSettings:BaseAddress"]
-                     ?? "https://ticketingsystem-ene4cdd9atdzdtd3.westeurope-01.azurewebsites.net/";
+                     ?? "https://ticketingsystem-api-ene4cdd9atdzd3.westeurope-01.azurewebsites.net/";
 
 // Ne asigurăm că adresa se termină mereu cu '/' pentru a evita erori de rutare
 if (!apiBaseAddress.EndsWith("/")) apiBaseAddress += "/";
