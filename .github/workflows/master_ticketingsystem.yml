@@ -13,62 +13,65 @@ jobs:
       contents: read
 
     steps:
-      - uses: actions/checkout@v4
+      # Checkout cod
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
+      # Setup .NET
       - name: Set up .NET Core
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '9.x'
 
-      # Build API
-      - name: Build API
-        run: dotnet build TicketingSystem.API/TicketingSystem.API.csproj --configuration Release
-
-      # Publish API
+      # Build & Publish API
       - name: Publish API
-        run: dotnet publish TicketingSystem.API/TicketingSystem.API.csproj -c Release -o ./output/api
+        run: |
+          dotnet restore TicketingSystem.API/TicketingSystem.API.csproj
+          dotnet build TicketingSystem.API/TicketingSystem.API.csproj -c Release
+          dotnet publish TicketingSystem.API/TicketingSystem.API.csproj -c Release -o ./output/api
 
-      # Build Blazor
-      - name: Build Blazor
-        run: dotnet build TicketingSystem.Blazor/TicketingSystem.Blazor.csproj --configuration Release
-
-      # Publish Blazor
+      # Build & Publish Blazor
       - name: Publish Blazor
-        run: dotnet publish TicketingSystem.Blazor/TicketingSystem.Blazor.csproj -c Release -o ./output/blazor
+        run: |
+          dotnet restore TicketingSystem.Blazor/TicketingSystem.Blazor.csproj
+          dotnet build TicketingSystem.Blazor/TicketingSystem.Blazor.csproj -c Release
+          dotnet publish TicketingSystem.Blazor/TicketingSystem.Blazor.csproj -c Release -o ./output/blazor/publish
 
-      # Upload artifact
+      # Upload artifacts (API + Blazor)
       - name: Upload artifact for deployment
         uses: actions/upload-artifact@v4
         with:
           name: net-app
-          path: ./output
+          path: ./output/*
 
   deploy:
     runs-on: windows-latest
     needs: build
     permissions:
-      id-token: write
       contents: read
 
     steps:
+      # Checkout cod
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Download artifacts
       - name: Download artifact
         uses: actions/download-artifact@v4
         with:
           name: net-app
 
-      - name: Login to Azure
+      # Login to Azure
+      - name: Login to Azure using Service Principal
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_E0C8E9EA157C40AA809883D9EF36C810 }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_039768693EF249F4A293964328D4C53C }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_D73AD0FCFD7F44FE86C44702384F917A }}
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       # Deploy API
       - name: Deploy API to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'ticketingsystem-api'
-          slot-name: 'Production'
           package: ./output/api
 
       # Deploy Blazor
@@ -76,5 +79,4 @@ jobs:
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'TicketingSystem'
-          slot-name: 'Production'
-          package: ./output/blazor
+          package: ./output/blazor/publish
