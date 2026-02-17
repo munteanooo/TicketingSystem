@@ -60,4 +60,5 @@ jobs:
         with:
           app-name: 'TicketingSystem'
           slot-name: 'Production'
-          package: .
+          package: ./output
+
