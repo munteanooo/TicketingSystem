@@ -67,9 +67,9 @@ jobs:
       - name: Deploy API to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'TicketingSystem-API'
+          app-name: 'ticketingsystem-api'
           slot-name: 'Production'
-          package: ./api
+          package: ./output/api
 
       # Deploy Blazor
       - name: Deploy Blazor to Azure Web App
@@ -77,4 +77,4 @@ jobs:
         with:
           app-name: 'TicketingSystem'
           slot-name: 'Production'
-          package: ./blazor
+          package: ./output/blazor
