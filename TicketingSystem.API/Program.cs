@@ -14,7 +14,7 @@ using TicketingSystem.Infrastructure.MediatR;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// --- 1. Servicii ---
+// --- 1. Servicii de bază ---
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 
@@ -59,19 +59,20 @@ builder.Services.AddAuthentication(options =>
      };
 });
 
-// --- 4. CORS (CORECTAT) ---
+// --- 4. CORS (Configurare Militară) ---
 builder.Services.AddCors(options =>
 {
      options.AddPolicy("BlazorPolicy", policy =>
      {
           policy.WithOrigins(
-                  "https://localhost:5001", // Portul local Blazor
+                  "https://localhost:5001",
                   "http://localhost:5000",
-                  "https://ticketingsystem-ene4cdd9atdzdtd3.westeurope-01.azurewebsites.net" // URL-UL TĂU DE FRONTEND (nu API)
+                  "https://ticketingsystem-ene4cdd9atdzdtd3.westeurope-01.azurewebsites.net" // URL Frontend
               )
               .AllowAnyHeader()
               .AllowAnyMethod()
-              .AllowCredentials(); // Adăugat pentru siguranță dacă folosești cookies/Identity
+              .AllowCredentials()
+              .SetIsOriginAllowedToAllowWildcardSubdomains();
      });
 });
 
@@ -82,27 +83,25 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// --- 6. Middleware ---
-// IMPORTANT: Ordinea contează enorm în ASP.NET Core!
+// --- 6. Middleware (ORDINEA ESTE CRITICĂ) ---
 
-if (app.Environment.IsDevelopment())
+// Activează Swagger și în producție momentan pentru a verifica dacă API-ul răspunde
+app.UseSwagger();
+app.UseSwaggerUI(c =>
 {
-     app.UseSwagger();
-     app.UseSwaggerUI(c =>
-     {
-          c.SwaggerEndpoint("/swagger/v1/swagger.json", "Ticketing API V1");
-     });
-}
+     c.SwaggerEndpoint("/swagger/v1/swagger.json", "Ticketing API V1");
+     c.RoutePrefix = "swagger"; // API-ul va fi la /swagger
+});
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
-// Fișierele statice și framework-ul Blazor trebuie să fie înainte de Routing
+// Servirea fișierelor Blazor
 app.UseBlazorFrameworkFiles();
 app.UseStaticFiles();
 
 app.UseRouting();
 
-// CORS trebuie să fie după UseRouting dar înainte de Authentication/Authorization
+// CORS trebuie să fie exact aici
 app.UseCors("BlazorPolicy");
 
 app.UseAuthentication();
@@ -110,7 +109,7 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-// Fallback pentru Blazor WASM
+// Fallback pentru a asigura că Refresh-ul în browser nu dă 404
 app.MapFallbackToFile("index.html");
 
 app.Run();
