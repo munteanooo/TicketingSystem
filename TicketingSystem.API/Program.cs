@@ -59,16 +59,20 @@ builder.Services.AddAuthentication(options =>
      };
 });
 
-// --- 4. CORS ---
+// --- 4. CORS (CORECTAT) ---
 builder.Services.AddCors(options =>
 {
      options.AddPolicy("BlazorPolicy", policy =>
+     {
           policy.WithOrigins(
-                "https://localhost:5001", // portul Blazor client
-                "https://ticketingsystem-api-hudhbxczcdf7h2dh.westeurope-01.azurewebsites.net" // Azure Frontend
-          )
-          .AllowAnyHeader()
-          .AllowAnyMethod());
+                  "https://localhost:5001", // Portul local Blazor
+                  "http://localhost:5000",
+                  "https://ticketingsystem-ene4cdd9atdzdtd3.westeurope-01.azurewebsites.net" // URL-UL TĂU DE FRONTEND (nu API)
+              )
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials(); // Adăugat pentru siguranță dacă folosești cookies/Identity
+     });
 });
 
 // --- 5. Alte servicii ---
@@ -79,26 +83,34 @@ builder.Services.AddSwaggerGen();
 var app = builder.Build();
 
 // --- 6. Middleware ---
+// IMPORTANT: Ordinea contează enorm în ASP.NET Core!
+
+if (app.Environment.IsDevelopment())
+{
+     app.UseSwagger();
+     app.UseSwaggerUI(c =>
+     {
+          c.SwaggerEndpoint("/swagger/v1/swagger.json", "Ticketing API V1");
+     });
+}
+
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
-app.UseSwagger();
-app.UseSwaggerUI(c =>
-{
-     c.SwaggerEndpoint("/swagger/v1/swagger.json", "Ticketing API V1");
-});
-
+// Fișierele statice și framework-ul Blazor trebuie să fie înainte de Routing
 app.UseBlazorFrameworkFiles();
 app.UseStaticFiles();
 
 app.UseRouting();
 
-app.UseCors("BlazorPolicy");  // înainte de Authentication/Authorization
+// CORS trebuie să fie după UseRouting dar înainte de Authentication/Authorization
+app.UseCors("BlazorPolicy");
+
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
 
-// Fallback Blazor
+// Fallback pentru Blazor WASM
 app.MapFallbackToFile("index.html");
 
 app.Run();
