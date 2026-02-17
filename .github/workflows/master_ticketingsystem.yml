@@ -24,16 +24,14 @@ jobs:
       # Build & Publish API
       - name: Publish API
         run: |
-          dotnet restore TicketingSystem.API/TicketingSystem.API.csproj
-          dotnet build TicketingSystem.API/TicketingSystem.API.csproj -c Release
           dotnet publish TicketingSystem.API/TicketingSystem.API.csproj -c Release -o ./output/api
 
       # Build & Publish Blazor
       - name: Publish Blazor
         run: |
-          dotnet restore TicketingSystem.Blazor/TicketingSystem.Blazor.csproj
-          dotnet build TicketingSystem.Blazor/TicketingSystem.Blazor.csproj -c Release
           dotnet publish TicketingSystem.Blazor/TicketingSystem.Blazor.csproj -c Release -o ./output/blazor
+          echo "Blazor publish folder contents:"
+          dir ./output/blazor
 
       # Upload artifacts
       - name: Upload artifact for deployment
