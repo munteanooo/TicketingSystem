@@ -55,4 +55,5 @@ jobs:
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'TicketingSystem'
-          package: ./output/blazor/publish
+          package: ./TicketingSystem.Blazor/output/blazor/publish
+
