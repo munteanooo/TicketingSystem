@@ -33,7 +33,19 @@ jobs:
         run: |
           dotnet restore TicketingSystem.Blazor/TicketingSystem.Blazor.csproj
           dotnet build TicketingSystem.Blazor/TicketingSystem.Blazor.csproj -c Release
-          dotnet publish TicketingSystem.Blazor/TicketingSystem.Blazor.csproj -c Release -o ./output/blazor
+          dotnet publish TicketingSystem.Blazor/TicketingSystem.Blazor.csproj -c Release -o ./output/blazor/publish
+
+      # Check Blazor publish folder
+      - name: Check Blazor publish folder
+        run: |
+          echo "Checking contents of ./output/blazor/publish"
+          if [ -d "./output/blazor/publish" ]; then
+            echo "Folder exists:"
+            ls -R ./output/blazor/publish
+          else
+            echo "Folder does NOT exist. Listing ./output/blazor instead:"
+            ls -R ./output/blazor
+          fi
 
       # Upload artifacts (API + Blazor)
       - name: Upload artifact for deployment
@@ -75,5 +87,4 @@ jobs:
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'TicketingSystem'
-          package: ./output/blazor
-
+          package: ./output/blazor/publish
