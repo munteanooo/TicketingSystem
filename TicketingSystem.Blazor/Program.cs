@@ -17,22 +17,24 @@ builder.Services.AddMudServices();
 builder.Services.AddBlazoredLocalStorage();
 
 // --- 2. Configurare HTTP & API ---
-// Citim adresa din appsettings.json, iar dacă lipsește, folosim adresa ta live de Azure
+// Verifică dacă în appsettings.json adresa este corectă pentru Azure
 var apiBaseAddress = builder.Configuration["ApiSettings:BaseAddress"]
                      ?? "https://ticketingsystem-api-ene4cdd9atdzd3.westeurope-01.azurewebsites.net/";
 
-// Ne asigurăm că adresa se termină mereu cu '/' pentru a evita erori de rutare
+// IMPORTANT: Unii browseri/servere sunt sensibili la slash-ul de final în apeluri API
 if (!apiBaseAddress.EndsWith("/")) apiBaseAddress += "/";
 
 builder.Services.AddTransient<JwtInterceptor>();
 
+// Înregistrare HttpClient (Named Client)
 builder.Services.AddHttpClient("TicketingAPI", client =>
 {
      client.BaseAddress = new Uri(apiBaseAddress);
 })
 .AddHttpMessageHandler<JwtInterceptor>();
 
-// Înregistrăm HttpClient-ul principal care va fi injectat în servicii
+// Această linie este CRUCIALĂ: asigură că atunci când injectezi HttpClient simplu în servicii, 
+// acesta va folosi setările de mai sus (BaseAddress + Interceptor)
 builder.Services.AddScoped(sp =>
     sp.GetRequiredService<IHttpClientFactory>().CreateClient("TicketingAPI"));
 
@@ -43,6 +45,7 @@ builder.Services.AddScoped<AuthenticationStateProvider>(sp =>
     sp.GetRequiredService<ApiAuthenticationStateProvider>());
 
 // --- 4. Servicii de Business ---
+// Asigură-te că AuthService și TicketService primesc un HttpClient în constructor
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<ITicketService, TicketService>();
 
