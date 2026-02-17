@@ -24,21 +24,23 @@ jobs:
       # Build & Publish API
       - name: Publish API
         run: |
+          dotnet restore TicketingSystem.API/TicketingSystem.API.csproj
+          dotnet build TicketingSystem.API/TicketingSystem.API.csproj -c Release
           dotnet publish TicketingSystem.API/TicketingSystem.API.csproj -c Release -o ./output/api
 
       # Build & Publish Blazor
       - name: Publish Blazor
         run: |
+          dotnet restore TicketingSystem.Blazor/TicketingSystem.Blazor.csproj
+          dotnet build TicketingSystem.Blazor/TicketingSystem.Blazor.csproj -c Release
           dotnet publish TicketingSystem.Blazor/TicketingSystem.Blazor.csproj -c Release -o ./output/blazor
-          echo "Blazor publish folder contents:"
-          dir ./output/blazor
 
-      # Upload artifacts
+      # Upload artifacts (API + Blazor)
       - name: Upload artifact for deployment
         uses: actions/upload-artifact@v4
         with:
           name: net-app
-          path: ./output
+          path: ./output/*
 
   deploy:
     runs-on: windows-latest
@@ -55,6 +57,7 @@ jobs:
         with:
           name: net-app
 
+      # Login to Azure
       - name: Login to Azure using Service Principal
         uses: azure/login@v2
         with:
@@ -65,11 +68,11 @@ jobs:
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'ticketingsystem-api'
-          package: ./output/api
+          package: ./api
 
       # Deploy Blazor
       - name: Deploy Blazor to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'TicketingSystem'
-          package: ./output/blazor
+          package: ./output/blazor/publish
