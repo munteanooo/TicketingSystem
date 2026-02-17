@@ -20,19 +20,20 @@ jobs:
         with:
           dotnet-version: '9.x'
 
-      # Am schimbat build-ul sa vizeze doar API-ul
-      - name: Build with dotnet
+      - name: Build API
         run: dotnet build TicketingSystem.API/TicketingSystem.API.csproj --configuration Release
 
-      # Am schimbat publish-ul sa vizeze doar API-ul si am setat un folder de output curat
-      - name: dotnet publish
+      - name: Publish API
         run: dotnet publish TicketingSystem.API/TicketingSystem.API.csproj -c Release -o ./output
 
-      - name: Upload artifact for deployment job
+      - name: Zip publish folder
+        run: Compress-Archive -Path ./output/* -DestinationPath ./TicketingSystem.API.zip
+
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: net-app # Am scos punctul din nume pentru siguranta
-          path: ./output
+          name: net-app
+          path: ./TicketingSystem.API.zip
 
   deploy:
     runs-on: windows-latest
@@ -42,11 +43,12 @@ jobs:
       contents: read
 
     steps:
-      - name: Download artifact from build job
+      - name: Download artifact
         uses: actions/download-artifact@v4
         with:
           name: net-app
-      
+          path: ./artifact
+
       - name: Login to Azure
         uses: azure/login@v2
         with:
@@ -55,10 +57,8 @@ jobs:
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_D73AD0FCFD7F44FE86C44702384F917A }}
 
       - name: Deploy to Azure Web App
-        id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'TicketingSystem'
           slot-name: 'Production'
-          package: ./output
-
+          package: ./artifact/TicketingSystem.API.zip
