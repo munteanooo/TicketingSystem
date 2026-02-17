@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: windows-latest
     permissions:
       contents: read
@@ -24,42 +24,18 @@ jobs:
           dotnet-version: '9.x'
 
       # Build & Publish API
-      - name: Publish API
+      - name: Build and Publish API
         run: |
           dotnet restore TicketingSystem.API/TicketingSystem.API.csproj
           dotnet build TicketingSystem.API/TicketingSystem.API.csproj -c Release
           dotnet publish TicketingSystem.API/TicketingSystem.API.csproj -c Release -o ./output/api
 
       # Build & Publish Blazor
-      - name: Publish Blazor
+      - name: Build and Publish Blazor
         run: |
           dotnet restore TicketingSystem.Blazor/TicketingSystem.Blazor.csproj
           dotnet build TicketingSystem.Blazor/TicketingSystem.Blazor.csproj -c Release
           dotnet publish TicketingSystem.Blazor/TicketingSystem.Blazor.csproj -c Release -o ./output/blazor/publish
-
-      # Upload artifacts (API + Blazor)
-      - name: Upload artifact for deployment
-        uses: actions/upload-artifact@v4
-        with:
-          name: net-app
-          path: ./output/*
-
-  deploy:
-    runs-on: windows-latest
-    needs: build
-    permissions:
-      contents: read
-
-    steps:
-      # Checkout cod
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      # Download artifacts
-      - name: Download artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: net-app
 
       # Login to Azure
       - name: Login to Azure using Service Principal
@@ -80,3 +56,7 @@ jobs:
         with:
           app-name: 'TicketingSystem'
           package: ./output/blazor/publish
+
+
+
+
