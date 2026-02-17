@@ -13,9 +13,11 @@ jobs:
       contents: read
 
     steps:
+      # Checkout cod
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # Setup .NET
       - name: Set up .NET Core
         uses: actions/setup-dotnet@v4
         with:
@@ -35,18 +37,6 @@ jobs:
           dotnet build TicketingSystem.Blazor/TicketingSystem.Blazor.csproj -c Release
           dotnet publish TicketingSystem.Blazor/TicketingSystem.Blazor.csproj -c Release -o ./output/blazor/publish
 
-      # Check Blazor publish folder
-      - name: Check Blazor publish folder
-        run: |
-          echo "Checking contents of ./output/blazor/publish"
-          if [ -d "./output/blazor/publish" ]; then
-            echo "Folder exists:"
-            ls -R ./output/blazor/publish
-          else
-            echo "Folder does NOT exist. Listing ./output/blazor instead:"
-            ls -R ./output/blazor
-          fi
-
       # Upload artifacts (API + Blazor)
       - name: Upload artifact for deployment
         uses: actions/upload-artifact@v4
@@ -61,9 +51,11 @@ jobs:
       contents: read
 
     steps:
+      # Checkout cod
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # Download artifacts
       - name: Download artifact
         uses: actions/download-artifact@v4
         with:
@@ -80,7 +72,7 @@ jobs:
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'ticketingsystem-api'
-          package: ./api
+          package: ./output/api
 
       # Deploy Blazor
       - name: Deploy Blazor to Azure Web App
